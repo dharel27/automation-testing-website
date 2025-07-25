@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { initializeDatabase } from './database/init.js';
 import {
   globalErrorHandler,
@@ -13,8 +15,16 @@ import userRoutes from './routes/users.js';
 import productRoutes from './routes/products.js';
 import fileRoutes from './routes/files.js';
 import testRoutes from './routes/test.js';
+import notificationRoutes from './routes/notifications.js';
 
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+  },
+});
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -30,6 +40,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Basic health check route
 app.get('/api/health', (req, res) => {
@@ -46,6 +57,33 @@ app.all('*', notFoundHandler);
 // Global error handling middleware (must be last)
 app.use(globalErrorHandler);
 
+// WebSocket connection handling
+io.on('connection', (socket) => {
+  logger.info(`Client connected: ${socket.id}`);
+
+  // Join notification room
+  socket.join('notifications');
+
+  // Handle client disconnect
+  socket.on('disconnect', () => {
+    logger.info(`Client disconnected: ${socket.id}`);
+  });
+
+  // Handle custom events
+  socket.on('join-room', (room) => {
+    socket.join(room);
+    logger.info(`Client ${socket.id} joined room: ${room}`);
+  });
+
+  socket.on('leave-room', (room) => {
+    socket.leave(room);
+    logger.info(`Client ${socket.id} left room: ${room}`);
+  });
+});
+
+// Make io available to routes
+app.set('io', io);
+
 // Initialize database and start server
 async function startServer() {
   try {
@@ -54,9 +92,10 @@ async function startServer() {
     logger.info('Database initialized successfully');
 
     // Start server
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       logger.info(`Server is running on port ${PORT}`);
       logger.info(`Health check: http://localhost:${PORT}/api/health`);
+      logger.info(`WebSocket server is ready`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);

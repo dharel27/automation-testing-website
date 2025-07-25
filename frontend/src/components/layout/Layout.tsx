@@ -1,6 +1,8 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import { ToastContainer } from '../ui/Toast';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -8,6 +10,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const { toasts, removeToast } = useNotifications();
 
   // Initialize dark mode from localStorage or system preference
   useEffect(() => {
@@ -89,6 +92,9 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   );
 };

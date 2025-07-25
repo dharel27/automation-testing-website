@@ -26,13 +26,13 @@ describe('Carousel', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 
   it('renders carousel with all slides', () => {
@@ -194,7 +194,7 @@ describe('Carousel', () => {
     expect(firstSlide).toHaveClass('opacity-100');
 
     // Fast-forward past the interval
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
 
     const secondSlide = screen.getByTestId('carousel-slide-1');
     expect(secondSlide).toHaveClass('opacity-100');
@@ -211,7 +211,7 @@ describe('Carousel', () => {
     // Mouse enter should stop autoplay
     await user.hover(carousel);
 
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
 
     const firstSlide = screen.getByTestId('carousel-slide-0');
     expect(firstSlide).toHaveClass('opacity-100'); // Should still be on first slide
@@ -219,7 +219,7 @@ describe('Carousel', () => {
     // Mouse leave should resume autoplay
     await user.unhover(carousel);
 
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
 
     const secondSlide = screen.getByTestId('carousel-slide-1');
     expect(secondSlide).toHaveClass('opacity-100');
@@ -355,7 +355,7 @@ describe('Carousel', () => {
   });
 
   it('cleans up intervals on unmount', () => {
-    const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
     const { unmount } = render(<Carousel {...defaultProps} autoPlay={true} />);
 
     unmount();

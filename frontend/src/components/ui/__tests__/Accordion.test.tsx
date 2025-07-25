@@ -27,7 +27,7 @@ describe('Accordion', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders all accordion items', () => {

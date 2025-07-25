@@ -9,13 +9,13 @@ describe('Tooltip', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 
   it('renders trigger element', () => {
@@ -26,14 +26,14 @@ describe('Tooltip', () => {
   });
 
   it('shows tooltip on hover when trigger is hover', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} trigger="hover" />);
 
     const trigger = screen.getByTestId('tooltip-trigger');
     await user.hover(trigger);
 
     // Fast-forward past the delay
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip')).toBeInTheDocument();
@@ -42,12 +42,12 @@ describe('Tooltip', () => {
   });
 
   it('hides tooltip on mouse leave when trigger is hover', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} trigger="hover" />);
 
     const trigger = screen.getByTestId('tooltip-trigger');
     await user.hover(trigger);
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip')).toBeInTheDocument();
@@ -61,13 +61,13 @@ describe('Tooltip', () => {
   });
 
   it('shows tooltip on focus when trigger is focus', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} trigger="focus" />);
 
     const button = screen.getByText('Trigger');
     await user.click(button); // This will focus the button
 
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip')).toBeInTheDocument();
@@ -75,12 +75,12 @@ describe('Tooltip', () => {
   });
 
   it('hides tooltip on blur when trigger is focus', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} trigger="focus" />);
 
     const button = screen.getByText('Trigger');
     await user.click(button);
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip')).toBeInTheDocument();
@@ -94,14 +94,14 @@ describe('Tooltip', () => {
   });
 
   it('shows tooltip on both hover and focus when trigger is both', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} trigger="both" />);
 
     const trigger = screen.getByTestId('tooltip-trigger');
 
     // Test hover
     await user.hover(trigger);
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip')).toBeInTheDocument();
@@ -116,7 +116,7 @@ describe('Tooltip', () => {
     // Test focus
     const button = screen.getByText('Trigger');
     await user.click(button);
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip')).toBeInTheDocument();
@@ -124,18 +124,18 @@ describe('Tooltip', () => {
   });
 
   it('respects custom delay', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} delay={500} />);
 
     const trigger = screen.getByTestId('tooltip-trigger');
     await user.hover(trigger);
 
     // Should not show before delay
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     expect(screen.queryByTestId('tooltip')).not.toBeInTheDocument();
 
     // Should show after delay
-    jest.advanceTimersByTime(100);
+    vi.advanceTimersByTime(100);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip')).toBeInTheDocument();
@@ -143,7 +143,7 @@ describe('Tooltip', () => {
   });
 
   it('applies correct position classes', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     const positions = ['top', 'bottom', 'left', 'right'] as const;
 
@@ -154,7 +154,7 @@ describe('Tooltip', () => {
 
       const trigger = screen.getByTestId('tooltip-trigger');
       await user.hover(trigger);
-      jest.advanceTimersByTime(200);
+      vi.advanceTimersByTime(200);
 
       await waitFor(() => {
         const tooltip = screen.getByTestId('tooltip');
@@ -176,12 +176,12 @@ describe('Tooltip', () => {
   });
 
   it('hides tooltip on Escape key', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} />);
 
     const trigger = screen.getByTestId('tooltip-trigger');
     await user.hover(trigger);
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip')).toBeInTheDocument();
@@ -195,12 +195,12 @@ describe('Tooltip', () => {
   });
 
   it('has proper ARIA attributes', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} />);
 
     const trigger = screen.getByTestId('tooltip-trigger');
     await user.hover(trigger);
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       const tooltip = screen.getByTestId('tooltip');
@@ -210,12 +210,12 @@ describe('Tooltip', () => {
   });
 
   it('renders arrow element', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} />);
 
     const trigger = screen.getByTestId('tooltip-trigger');
     await user.hover(trigger);
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('tooltip-arrow')).toBeInTheDocument();
@@ -223,14 +223,14 @@ describe('Tooltip', () => {
   });
 
   it('uses custom data-testid', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Tooltip {...defaultProps} data-testid="custom-tooltip" />);
 
     expect(screen.getByTestId('custom-tooltip-trigger')).toBeInTheDocument();
 
     const trigger = screen.getByTestId('custom-tooltip-trigger');
     await user.hover(trigger);
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
 
     await waitFor(() => {
       expect(screen.getByTestId('custom-tooltip')).toBeInTheDocument();
@@ -239,7 +239,7 @@ describe('Tooltip', () => {
   });
 
   it('clears timeout on unmount', () => {
-    const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
     const { unmount } = render(<Tooltip {...defaultProps} />);
 
     unmount();

@@ -85,6 +85,13 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
               Data Table
             </Link>
             <Link
+              to="/real-time"
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              data-testid="nav-real-time"
+            >
+              Real-Time
+            </Link>
+            <Link
               to="/api-testing"
               className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               data-testid="nav-api-testing"
@@ -284,6 +291,14 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Data Table
+              </Link>
+              <Link
+                to="/real-time"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                data-testid="mobile-nav-real-time"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Real-Time
               </Link>
               <Link
                 to="/api-testing"

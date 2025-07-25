@@ -5,12 +5,12 @@ import { Modal } from '../Modal';
 describe('Modal', () => {
   const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     children: <div>Modal content</div>,
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     // Reset body overflow style
     document.body.style.overflow = 'unset';
   });

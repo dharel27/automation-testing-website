@@ -27,7 +27,9 @@ export const Carousel: React.FC<CarouselProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(
+    undefined
+  );
   const carouselRef = useRef<HTMLDivElement>(null);
   const startX = useRef<number>(0);
   const isDragging = useRef<boolean>(false);

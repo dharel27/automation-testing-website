@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 
 export interface AccordionItem {
   id: string;
@@ -109,7 +109,9 @@ export const Accordion: React.FC<AccordionProps> = ({
             className="border-b border-gray-200 dark:border-gray-700 last:border-b-0"
           >
             <button
-              ref={(el) => (itemRefs.current[item.id] = el)}
+              ref={(el) => {
+                itemRefs.current[item.id] = el;
+              }}
               className={`w-full px-6 py-4 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${
                 isDisabled
                   ? 'cursor-not-allowed opacity-50 bg-gray-50 dark:bg-gray-800'
