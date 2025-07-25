@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface HeaderProps {
   isDarkMode: boolean;
@@ -8,9 +9,20 @@ interface HeaderProps {
 
 const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const { state, logout } = useAuth();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const toggleUserMenu = () => {
+    setIsUserMenuOpen(!isUserMenuOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsUserMenuOpen(false);
   };
 
   return (
@@ -79,13 +91,86 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
             >
               API Testing
             </Link>
-            <Link
-              to="/login"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              data-testid="nav-login"
-            >
-              Login
-            </Link>
+
+            {/* Authentication Navigation */}
+            {state.isAuthenticated ? (
+              <div className="relative">
+                <button
+                  onClick={toggleUserMenu}
+                  className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  data-testid="user-menu-button"
+                  aria-expanded={isUserMenuOpen}
+                  aria-haspopup="true"
+                >
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    {state.user?.profile.firstName?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <span>{state.user?.profile.firstName}</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {isUserMenuOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700"
+                    data-testid="user-dropdown-menu"
+                  >
+                    <Link
+                      to="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      data-testid="nav-dashboard"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      to="/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      data-testid="nav-profile"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <hr className="border-gray-200 dark:border-gray-700" />
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      data-testid="nav-logout"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/login"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  data-testid="nav-login"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  data-testid="nav-register"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </nav>
 
           {/* Theme Toggle and Mobile Menu Button */}
@@ -208,14 +293,57 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
               >
                 API Testing
               </Link>
-              <Link
-                to="/login"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
-                data-testid="mobile-nav-login"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Login
-              </Link>
+
+              {/* Mobile Authentication Navigation */}
+              {state.isAuthenticated ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    data-testid="mobile-nav-dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    data-testid="mobile-nav-profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-left text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors w-full"
+                    data-testid="mobile-nav-logout"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    data-testid="mobile-nav-login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    data-testid="mobile-nav-register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

@@ -1,14 +1,6 @@
 import winston from 'winston';
 import logger from '../../utils/logger';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
+import { describe, it } from 'node:test';
 
 describe('Logger', () => {
   it('should be a winston logger instance', () => {

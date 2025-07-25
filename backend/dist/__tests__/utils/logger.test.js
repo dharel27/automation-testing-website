@@ -1,5 +1,6 @@
 import winston from 'winston';
 import logger from '../../utils/logger';
+import { describe, it } from 'node:test';
 describe('Logger', () => {
     it('should be a winston logger instance', () => {
         expect(logger).toBeInstanceOf(winston.Logger);

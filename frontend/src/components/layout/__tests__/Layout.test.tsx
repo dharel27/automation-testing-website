@@ -36,7 +36,7 @@ describe('Layout Component', () => {
 
     expect(screen.getByTestId('layout-wrapper')).toBeInTheDocument();
     expect(screen.getByTestId('main-content')).toBeInTheDocument();
-    expect(screen.getByTestId('test-content')).toBeInTheDocument();
+    expect(screen.getAllByTestId('test-content')).toHaveLength(3); // Rendered 3 times for responsive breakpoints
   });
 
   it('renders header and footer components', () => {
@@ -94,6 +94,8 @@ describe('Layout Component', () => {
   });
 
   it('toggles dark mode when theme toggle is clicked', () => {
+    localStorageMock.getItem.mockReturnValue('light'); // Ensure we start in light mode
+
     renderLayout();
 
     const themeToggle = screen.getByTestId('theme-toggle');
@@ -142,8 +144,8 @@ describe('Layout Component', () => {
     );
     renderLayout(customContent);
 
-    expect(screen.getByTestId('custom-content')).toBeInTheDocument();
-    expect(screen.getByText('Custom Test Content')).toBeInTheDocument();
+    expect(screen.getAllByTestId('custom-content')).toHaveLength(3); // Rendered 3 times for responsive breakpoints
+    expect(screen.getAllByText('Custom Test Content')).toHaveLength(3);
   });
 
   it('maintains flex layout structure', () => {
