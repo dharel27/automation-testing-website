@@ -1,0 +1,96 @@
+import { ReactNode, useState, useEffect } from 'react';
+import Header from './Header';
+import Footer from './Footer';
+
+interface LayoutProps {
+  children: ReactNode;
+}
+
+const Layout = ({ children }: LayoutProps) => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Initialize dark mode from localStorage or system preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches;
+
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
+  return (
+    <div
+      className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors duration-200"
+      data-testid="layout-wrapper"
+    >
+      {/* Skip Links for Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-50"
+        data-testid="skip-to-main"
+      >
+        Skip to main content
+      </a>
+      <a
+        href="#main-navigation"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-32 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-50"
+        data-testid="skip-to-navigation"
+      >
+        Skip to navigation
+      </a>
+
+      {/* Header */}
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+
+      {/* Main Content */}
+      <main
+        id="main-content"
+        className="flex-1 bg-gray-50 dark:bg-gray-800 transition-colors duration-200"
+        role="main"
+        data-testid="main-content"
+      >
+        {/* Responsive Container */}
+        <div className="min-h-full">
+          {/* Mobile: Full width with padding */}
+          <div className="block sm:hidden px-4 py-6">{children}</div>
+
+          {/* Tablet: Container with moderate padding */}
+          <div className="hidden sm:block lg:hidden">
+            <div className="max-w-4xl mx-auto px-6 py-8">{children}</div>
+          </div>
+
+          {/* Desktop: Full container with generous padding */}
+          <div className="hidden lg:block">
+            <div className="max-w-7xl mx-auto px-8 py-12">{children}</div>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <Footer />
+    </div>
+  );
+};
+
+export default Layout;
