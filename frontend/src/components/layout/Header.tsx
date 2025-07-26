@@ -32,17 +32,17 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
       data-testid="main-header"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-16 md:h-20">
           {/* Logo and Brand */}
           <div className="flex items-center">
             <Link
               to="/"
-              className="flex items-center space-x-2 text-xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="flex items-center space-x-2 text-lg sm:text-xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors touch-target"
               data-testid="logo-link"
               aria-label="Automation Testing Website Home"
             >
               <svg
-                className="w-8 h-8 text-blue-600 dark:text-blue-400"
+                className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400 flex-shrink-0"
                 fill="currentColor"
                 viewBox="0 0 20 20"
                 aria-hidden="true"
@@ -53,57 +53,65 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                   clipRule="evenodd"
                 />
               </svg>
-              <span>AutoTest</span>
+              <span className="hidden xs:inline">AutoTest</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <nav
-            className="hidden md:flex items-center space-x-8"
+            id="main-navigation"
+            className="hidden lg:flex items-center space-x-2 xl:space-x-4"
             role="navigation"
             aria-label="Main navigation"
           >
             <Link
               to="/"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
               data-testid="nav-home"
             >
               Home
             </Link>
             <Link
               to="/forms"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
               data-testid="nav-forms"
             >
               Forms
             </Link>
             <Link
               to="/data-table"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
               data-testid="nav-data-table"
             >
               Data Table
             </Link>
             <Link
               to="/real-time"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
               data-testid="nav-real-time"
             >
               Real-Time
             </Link>
             <Link
               to="/api-testing"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
               data-testid="nav-api-testing"
             >
               API Testing
             </Link>
             <Link
               to="/performance"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
               data-testid="nav-performance"
             >
               Performance
+            </Link>
+            <Link
+              to="/error-test"
+              className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
+              data-testid="nav-error-test"
+            >
+              Error Test
             </Link>
 
             {/* Authentication Navigation */}
@@ -111,17 +119,19 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
               <div className="relative">
                 <button
                   onClick={toggleUserMenu}
-                  className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
                   data-testid="user-menu-button"
                   aria-expanded={isUserMenuOpen}
                   aria-haspopup="true"
                 >
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                     {state.user?.profile.firstName?.[0]?.toUpperCase() || 'U'}
                   </div>
-                  <span>{state.user?.profile.firstName}</span>
+                  <span className="hidden xl:inline truncate max-w-24">
+                    {state.user?.profile.firstName}
+                  </span>
                   <svg
-                    className="w-4 h-4"
+                    className="w-4 h-4 flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -137,12 +147,12 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
 
                 {isUserMenuOpen && (
                   <div
-                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700"
+                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700 animate-slide-down"
                     data-testid="user-dropdown-menu"
                   >
                     <Link
                       to="/dashboard"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-target"
                       data-testid="nav-dashboard"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
@@ -150,16 +160,16 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                     </Link>
                     <Link
                       to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-target"
                       data-testid="nav-profile"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
                       Profile
                     </Link>
-                    <hr className="border-gray-200 dark:border-gray-700" />
+                    <hr className="border-gray-200 dark:border-gray-700 my-1" />
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-target"
                       data-testid="nav-logout"
                     >
                       Sign Out
@@ -168,17 +178,17 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 xl:space-x-4">
                 <Link
                   to="/login"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
                   data-testid="nav-login"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 xl:px-4 py-2 rounded-md text-sm font-medium transition-colors touch-target"
                   data-testid="nav-register"
                 >
                   Sign Up
@@ -226,7 +236,7 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
             {/* Mobile Menu Button */}
             <button
               onClick={toggleMobileMenu}
-              className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="lg:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               data-testid="mobile-menu-toggle"
               aria-label="Toggle mobile menu"
               aria-expanded={isMobileMenuOpen}
@@ -269,15 +279,15 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
         {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
           <div
-            className="md:hidden border-t border-gray-200 dark:border-gray-700 py-4"
+            className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-4 animate-slide-down"
             data-testid="mobile-menu"
             role="navigation"
             aria-label="Mobile navigation"
           >
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col space-y-1">
               <Link
                 to="/"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                 data-testid="mobile-nav-home"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -285,7 +295,7 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
               </Link>
               <Link
                 to="/forms"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                 data-testid="mobile-nav-forms"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -293,7 +303,7 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
               </Link>
               <Link
                 to="/data-table"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                 data-testid="mobile-nav-data-table"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -301,7 +311,7 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
               </Link>
               <Link
                 to="/real-time"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                 data-testid="mobile-nav-real-time"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -309,7 +319,7 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
               </Link>
               <Link
                 to="/api-testing"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                 data-testid="mobile-nav-api-testing"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -317,19 +327,28 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
               </Link>
               <Link
                 to="/performance"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                 data-testid="mobile-nav-performance"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Performance
               </Link>
+              <Link
+                to="/error-test"
+                className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
+                data-testid="mobile-nav-error-test"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Error Test
+              </Link>
 
               {/* Mobile Authentication Navigation */}
               {state.isAuthenticated ? (
                 <>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
                   <Link
                     to="/dashboard"
-                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                     data-testid="mobile-nav-dashboard"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -337,7 +356,7 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                   </Link>
                   <Link
                     to="/profile"
-                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                     data-testid="mobile-nav-profile"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -348,7 +367,7 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                       handleLogout();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="text-left text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors w-full"
+                    className="text-left text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors w-full touch-target"
                     data-testid="mobile-nav-logout"
                   >
                     Sign Out
@@ -356,9 +375,10 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                 </>
               ) : (
                 <>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
                   <Link
                     to="/login"
-                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    className="nav-link text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                     data-testid="mobile-nav-login"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -366,7 +386,7 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                   </Link>
                   <Link
                     to="/register"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-base font-medium transition-colors touch-target"
                     data-testid="mobile-nav-register"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >

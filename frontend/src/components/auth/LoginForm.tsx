@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  createFormAutomationAttributes,
+  createButtonAutomationAttributes,
+  AutomationEventHooks,
+} from '../../utils/automation';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -76,19 +81,27 @@ export function LoginForm({ onSuccess, onCancel }: LoginFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Emit automation event
+    const eventHooks = AutomationEventHooks.getInstance();
+    eventHooks.emit('login-form-submit', { email: formData.email });
+
     if (!validateForm()) {
+      eventHooks.emit('login-form-validation-failed', { errors });
       return;
     }
 
     try {
       setErrors({});
+      eventHooks.emit('login-form-submit-start', { email: formData.email });
       await login(formData);
+      eventHooks.emit('login-form-submit-success', { email: formData.email });
       onSuccess?.();
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error?.message ||
         'Login failed. Please try again.';
       setErrors({ general: errorMessage });
+      eventHooks.emit('login-form-submit-error', { error: errorMessage });
     }
   };
 
@@ -142,9 +155,14 @@ export function LoginForm({ onSuccess, onCancel }: LoginFormProps) {
               }`}
               placeholder="Enter your email"
               autoComplete="email"
-              data-testid="email-input"
               aria-describedby={errors.email ? 'email-error' : undefined}
               aria-invalid={!!errors.email}
+              {...createFormAutomationAttributes('email', {
+                type: 'email',
+                required: true,
+                hasError: !!errors.email,
+                value: formData.email,
+              })}
             />
             {errors.email && (
               <p
@@ -178,11 +196,16 @@ export function LoginForm({ onSuccess, onCancel }: LoginFormProps) {
                 }`}
                 placeholder="Enter your password"
                 autoComplete="current-password"
-                data-testid="password-input"
                 aria-describedby={
                   errors.password ? 'password-error' : undefined
                 }
                 aria-invalid={!!errors.password}
+                {...createFormAutomationAttributes('password', {
+                  type: 'password',
+                  required: true,
+                  hasError: !!errors.password,
+                  value: formData.password,
+                })}
               />
               <button
                 type="button"
@@ -273,7 +296,11 @@ export function LoginForm({ onSuccess, onCancel }: LoginFormProps) {
             type="submit"
             disabled={state.isLoading}
             className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-700 dark:hover:bg-blue-800"
-            data-testid="login-submit"
+            {...createButtonAutomationAttributes('login-submit', {
+              disabled: state.isLoading,
+              loading: state.isLoading,
+              variant: 'primary',
+            })}
           >
             {state.isLoading ? (
               <>

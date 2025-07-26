@@ -14,6 +14,7 @@ import fs from 'fs/promises';
 import { getDatabase } from '../database/connection';
 import { FileRecord, } from '../models/FileRecord';
 import { authenticateToken, requireAuth, } from '../middleware/auth';
+import { uploadRateLimit } from '../middleware/security';
 const router = Router();
 // Helper function to create success response
 function createSuccessResponse(data) {
@@ -105,7 +106,7 @@ const upload = multer({
     },
 });
 // POST /api/files/upload - Upload files
-router.post('/upload', authenticateToken, requireAuth, upload.array('files', 10), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/upload', uploadRateLimit, authenticateToken, requireAuth, upload.array('files', 10), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const files = req.files;
         if (!files || files.length === 0) {

@@ -91,6 +91,29 @@ export class Session {
             return result.changes || 0;
         });
     }
+    update(id, updates) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const fields = [];
+            const values = [];
+            if (updates.token !== undefined) {
+                fields.push('token = ?');
+                values.push(updates.token);
+            }
+            if (updates.expiresAt !== undefined) {
+                fields.push('expires_at = ?');
+                values.push(updates.expiresAt.toISOString());
+            }
+            if (fields.length === 0) {
+                return yield this.findById(id);
+            }
+            values.push(id);
+            const result = yield this.db.run(`UPDATE sessions SET ${fields.join(', ')} WHERE id = ?`, values);
+            if ((result.changes || 0) === 0) {
+                return null;
+            }
+            return yield this.findById(id);
+        });
+    }
     extendSession(token, newExpiresAt) {
         return __awaiter(this, void 0, void 0, function* () {
             const result = yield this.db.run('UPDATE sessions SET expires_at = ? WHERE token = ?', [newExpiresAt.toISOString(), token]);

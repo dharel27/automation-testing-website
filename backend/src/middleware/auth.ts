@@ -11,7 +11,6 @@ const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '24h';
 
 export interface AuthenticatedRequest extends Request {
   user?: UserData;
-  session?: any;
 }
 
 export interface JWTPayload {

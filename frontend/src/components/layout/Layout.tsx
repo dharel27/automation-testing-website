@@ -73,20 +73,9 @@ const Layout = ({ children }: LayoutProps) => {
         role="main"
         data-testid="main-content"
       >
-        {/* Responsive Container */}
+        {/* Responsive Container with mobile-first approach */}
         <div className="min-h-full">
-          {/* Mobile: Full width with padding */}
-          <div className="block sm:hidden px-4 py-6">{children}</div>
-
-          {/* Tablet: Container with moderate padding */}
-          <div className="hidden sm:block lg:hidden">
-            <div className="max-w-4xl mx-auto px-6 py-8">{children}</div>
-          </div>
-
-          {/* Desktop: Full container with generous padding */}
-          <div className="hidden lg:block">
-            <div className="max-w-7xl mx-auto px-8 py-12">{children}</div>
-          </div>
+          <div className="container-responsive py-responsive">{children}</div>
         </div>
       </main>
 

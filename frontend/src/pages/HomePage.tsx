@@ -45,19 +45,19 @@ const HomePage = () => {
   };
 
   return (
-    <div className="space-y-12" data-testid="home-page">
+    <div className="space-y-responsive" data-testid="home-page">
       {/* Hero Section */}
-      <section className="text-center py-8" data-testid="hero-section">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
+      <section className="text-center py-responsive" data-testid="hero-section">
+        <h1 className="font-bold text-gray-800 dark:text-white mb-4 animate-fade-in">
           Automation Testing Website
         </h1>
-        <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+        <p className="text-lg lg:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed px-4">
           A comprehensive platform for testing automation frameworks including
           Selenium, Cypress, Playwright, and more
         </p>
 
         {/* Search Bar */}
-        <div className="mb-8">
+        <div className="mb-8 px-4">
           <SearchBar
             onSearch={handleSearch}
             placeholder="Search products, users, or explore features..."
@@ -65,17 +65,17 @@ const HomePage = () => {
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
           <Link
             to="/forms"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 touch-target text-center"
             data-testid="cta-start-testing"
           >
             Start Testing
           </Link>
           <Link
             to="/api-testing"
-            className="bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold py-3 px-8 rounded-lg border-2 border-gray-300 dark:border-gray-600 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            className="w-full sm:w-auto bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold py-4 px-8 rounded-lg border-2 border-gray-300 dark:border-gray-600 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 touch-target text-center"
             data-testid="cta-explore-api"
           >
             Explore APIs
@@ -90,17 +90,17 @@ const HomePage = () => {
 
       {/* Features Grid */}
       <section data-testid="features-section">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+        <div className="text-center mb-8 px-4">
+          <h2 className="font-bold text-gray-900 dark:text-white mb-4">
             Testing Features
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
             Explore our comprehensive testing environment designed for
             automation engineers
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid-responsive-sm">
           <FeatureCard featureType="forms" delay={100} />
           <FeatureCard featureType="api" delay={200} />
           <FeatureCard featureType="data" delay={300} />
@@ -114,30 +114,30 @@ const HomePage = () => {
       </section>
 
       {/* System Status Section */}
-      <section data-testid="system-status-section">
-        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <section data-testid="system-status-section" className="px-4">
+        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-responsive">
           <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white text-center">
             System Status
           </h2>
 
           {loading ? (
             <div
-              className="flex items-center justify-center py-4"
+              className="flex flex-col sm:flex-row items-center justify-center py-4 gap-2"
               data-testid="system-status-loading"
             >
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <span className="ml-2 text-gray-700 dark:text-gray-300">
+              <span className="text-gray-700 dark:text-gray-300 text-center">
                 Checking backend connection...
               </span>
             </div>
           ) : (
             <div className="space-y-3" data-testid="system-status-content">
-              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg gap-2">
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   Backend Status:
                 </span>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  className={`px-3 py-1 rounded-full text-sm font-medium text-center ${
                     healthStatus?.status === 'OK'
                       ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200'
                       : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'
@@ -148,24 +148,24 @@ const HomePage = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg gap-2">
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   Message:
                 </span>
                 <span
-                  className="text-sm text-gray-600 dark:text-gray-400"
+                  className="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-right"
                   data-testid="backend-message"
                 >
                   {healthStatus?.message}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg gap-2">
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   Last Check:
                 </span>
                 <span
-                  className="text-sm text-gray-600 dark:text-gray-400"
+                  className="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-right"
                   data-testid="backend-timestamp"
                 >
                   {healthStatus?.timestamp &&
@@ -179,26 +179,26 @@ const HomePage = () => {
 
       {/* Technology Stack Info */}
       <section
-        className="text-center py-8 border-t border-gray-200 dark:border-gray-700"
+        className="text-center py-responsive border-t border-gray-200 dark:border-gray-700 px-4"
         data-testid="tech-stack-section"
       >
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
           Technology Stack
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">
               Frontend
             </h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
               React + TypeScript + Vite + Tailwind CSS
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">
               Backend
             </h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
               Node.js + Express + TypeScript + SQLite
             </p>
           </div>

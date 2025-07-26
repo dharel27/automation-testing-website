@@ -118,6 +118,41 @@ export class Session {
     return result.changes || 0;
   }
 
+  async update(
+    id: string,
+    updates: Partial<CreateSessionInput>
+  ): Promise<SessionData | null> {
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (updates.token !== undefined) {
+      fields.push('token = ?');
+      values.push(updates.token);
+    }
+
+    if (updates.expiresAt !== undefined) {
+      fields.push('expires_at = ?');
+      values.push(updates.expiresAt.toISOString());
+    }
+
+    if (fields.length === 0) {
+      return await this.findById(id);
+    }
+
+    values.push(id);
+
+    const result = await this.db.run(
+      `UPDATE sessions SET ${fields.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    if ((result.changes || 0) === 0) {
+      return null;
+    }
+
+    return await this.findById(id);
+  }
+
   async extendSession(
     token: string,
     newExpiresAt: Date

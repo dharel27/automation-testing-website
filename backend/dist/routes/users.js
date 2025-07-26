@@ -22,6 +22,7 @@ import { Router } from 'express';
 import { getDatabase } from '../database/connection';
 import { User } from '../models/User';
 import { authenticateToken, requireAdmin, optionalAuth, } from '../middleware/auth';
+import { validateUserRegistration, validateProfileUpdate, handleValidationErrors, } from '../middleware/security';
 const router = Router();
 // Helper function to create success response
 function createSuccessResponse(data) {
@@ -112,7 +113,7 @@ router.get('/:id', authenticateToken, (req, res) => __awaiter(void 0, void 0, vo
     }
 }));
 // POST /api/users - Create new user (admin only)
-router.post('/', authenticateToken, requireAdmin, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/', authenticateToken, requireAdmin, validateUserRegistration, handleValidationErrors, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userData = req.body;
         // Validate required fields
@@ -168,7 +169,7 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => __awaiter(void 0
     }
 }));
 // PUT /api/users/:id - Update user
-router.put('/:id', authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put('/:id', authenticateToken, validateProfileUpdate, handleValidationErrors, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     try {
         const { id } = req.params;

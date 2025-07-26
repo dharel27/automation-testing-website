@@ -8,6 +8,11 @@ import {
   requireUserOrAdmin,
   optionalAuth,
 } from '../middleware/auth';
+import {
+  validateUserRegistration,
+  validateProfileUpdate,
+  handleValidationErrors,
+} from '../middleware/security';
 
 const router = Router();
 
@@ -170,6 +175,8 @@ router.post(
   '/',
   authenticateToken,
   requireAdmin,
+  validateUserRegistration,
+  handleValidationErrors,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const userData: CreateUserInput = req.body;
@@ -264,6 +271,8 @@ router.post(
 router.put(
   '/:id',
   authenticateToken,
+  validateProfileUpdate,
+  handleValidationErrors,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { id } = req.params;

@@ -135,7 +135,7 @@ export function useInfiniteScroll<T>({
 export function useInfiniteScrollSentinel() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   
-  const SentinelComponent = useCallback(() => (
+  const SentinelComponent = useCallback((): JSX.Element => (
     <div
       ref={sentinelRef}
       className="h-4 w-full"

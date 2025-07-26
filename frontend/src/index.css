@@ -2,56 +2,454 @@
 @tailwind components;
 @tailwind utilities;
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* Accessibility Utilities */
+@layer utilities {
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
+
+  /* Show screen reader content on focus */
+  .sr-only:focus,
+  .sr-only:active {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* Focus visible utilities */
+  .focus-visible-only:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Skip links */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 1000;
+    border-radius: 4px;
+  }
+
+  .skip-link:focus {
+    top: 6px;
+  }
+}
+
+/* Enhanced Focus Indicators */
+@layer base {
+  /* High contrast focus indicators */
+  *:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+
+  /* Custom focus styles for interactive elements */
+  button:focus,
+  a:focus,
+  input:focus,
+  select:focus,
+  textarea:focus,
+  [tabindex]:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  }
+
+  /* Focus styles for dark mode */
+  .dark button:focus,
+  .dark a:focus,
+  .dark input:focus,
+  .dark select:focus,
+  .dark textarea:focus,
+  .dark [tabindex]:focus {
+    outline-color: #60a5fa;
+    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.1);
+  }
+
+  /* Ensure focus is visible even with custom styles */
+  .focus\:ring-2:focus {
+    box-shadow:
+      0 0 0 2px #fff,
+      0 0 0 4px #2563eb;
+  }
+
+  .dark .focus\:ring-2:focus {
+    box-shadow:
+      0 0 0 2px #1f2937,
+      0 0 0 4px #60a5fa;
+  }
+}
+
+/* Color Contrast Enhancements */
+@layer base {
+  /* Ensure sufficient contrast for text */
+  .text-gray-500 {
+    color: #6b7280; /* Meets WCAG AA for normal text */
+  }
+
+  .dark .text-gray-500 {
+    color: #9ca3af; /* Meets WCAG AA for dark mode */
+  }
+
+  .text-gray-400 {
+    color: #9ca3af; /* Use for large text only */
+  }
+
+  .dark .text-gray-400 {
+    color: #6b7280; /* Use for large text only */
+  }
+
+  /* Enhanced link contrast */
+  a {
+    color: #1d4ed8; /* Better contrast than default blue */
+    text-decoration: underline;
+  }
+
   a:hover {
-    color: #747bff;
+    color: #1e40af;
   }
-  button {
-    background-color: #f9f9f9;
+
+  .dark a {
+    color: #60a5fa;
+  }
+
+  .dark a:hover {
+    color: #93c5fd;
+  }
+}
+
+/* Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  button,
+  input,
+  select,
+  textarea {
+    border: 2px solid;
+  }
+
+  .bg-blue-600 {
+    background-color: #1e40af;
+  }
+
+  .text-gray-500 {
+    color: #374151;
+  }
+
+  .dark .text-gray-500 {
+    color: #d1d5db;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  a[href^='http']:after {
+    content: ' (' attr(href) ')';
+  }
+
+  .sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    overflow: visible;
+  }
+}
+
+/* Responsive Typography */
+@layer base {
+  html {
+    font-size: 16px;
+  }
+
+  /* Mobile-first responsive font sizes */
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      font-size: 18px;
+    }
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    line-height: 1.6;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Responsive headings */
+  h1 {
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    line-height: 1.2;
+    margin-top: 0;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+    line-height: 1.3;
+    margin-top: 0;
+    margin-bottom: 0.875rem;
+  }
+
+  h3 {
+    font-size: clamp(1.25rem, 3vw, 1.875rem);
+    line-height: 1.3;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  h4 {
+    font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+    line-height: 1.4;
+    margin-top: 0;
+    margin-bottom: 0.625rem;
+  }
+
+  h5 {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    line-height: 1.4;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  h6 {
+    font-size: clamp(0.875rem, 1.5vw, 1.125rem);
+    line-height: 1.4;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Responsive paragraph spacing */
+  p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  /* Responsive list spacing */
+  ul,
+  ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Touch-Friendly Interactive Elements */
+@layer utilities {
+  /* Minimum touch target sizes (44px minimum for accessibility) */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Enhanced touch targets for mobile */
+  @media (max-width: 768px) {
+    button,
+    a[role='button'],
+    input[type='button'],
+    input[type='submit'],
+    input[type='reset'],
+    [role='button'],
+    select,
+    input[type='checkbox'],
+    input[type='radio'] {
+      min-height: 48px;
+      min-width: 48px;
+    }
+
+    /* Larger padding for form inputs on mobile */
+    input:not([type='checkbox']):not([type='radio']),
+    textarea,
+    select {
+      padding: 12px 16px;
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    /* Larger tap targets for navigation */
+    nav a,
+    .nav-link {
+      padding: 12px 16px;
+      min-height: 48px;
+    }
+  }
+
+  /* Exception for text links */
+  a:not([role='button']):not(.nav-link) {
+    min-height: auto;
+    min-width: auto;
+    display: inline;
+  }
+
+  /* Responsive spacing utilities */
+  .space-y-responsive > * + * {
+    margin-top: clamp(0.5rem, 2vw, 1.5rem);
+  }
+
+  .space-x-responsive > * + * {
+    margin-left: clamp(0.5rem, 2vw, 1.5rem);
+  }
+
+  /* Responsive padding utilities */
+  .p-responsive {
+    padding: clamp(1rem, 4vw, 2rem);
+  }
+
+  .px-responsive {
+    padding-left: clamp(1rem, 4vw, 2rem);
+    padding-right: clamp(1rem, 4vw, 2rem);
+  }
+
+  .py-responsive {
+    padding-top: clamp(1rem, 4vw, 2rem);
+    padding-bottom: clamp(1rem, 4vw, 2rem);
+  }
+
+  /* Responsive margin utilities */
+  .m-responsive {
+    margin: clamp(1rem, 4vw, 2rem);
+  }
+
+  .mx-responsive {
+    margin-left: clamp(1rem, 4vw, 2rem);
+    margin-right: clamp(1rem, 4vw, 2rem);
+  }
+
+  .my-responsive {
+    margin-top: clamp(1rem, 4vw, 2rem);
+    margin-bottom: clamp(1rem, 4vw, 2rem);
+  }
+}
+
+/* Responsive Grid Systems */
+@layer utilities {
+  /* Auto-fit grid with responsive minimum widths */
+  .grid-responsive-xs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  .grid-responsive-sm {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  .grid-responsive-md {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  .grid-responsive-lg {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  /* Responsive flex utilities */
+  .flex-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(0.5rem, 2vw, 1.5rem);
+  }
+
+  .flex-responsive > * {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* Responsive container */
+  .container-responsive {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: clamp(1rem, 4vw, 2rem);
+    padding-right: clamp(1rem, 4vw, 2rem);
+  }
+
+  @media (min-width: 640px) {
+    .container-responsive {
+      max-width: 640px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .container-responsive {
+      max-width: 768px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-responsive {
+      max-width: 1024px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-responsive {
+      max-width: 1280px;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .container-responsive {
+      max-width: 1536px;
+    }
   }
 }

@@ -22,13 +22,15 @@ import { Router } from 'express';
 import { getDatabase } from '../database/connection';
 import { User } from '../models/User';
 import { Session } from '../models/Session';
-import { generateToken, authenticateToken, } from '../middleware/auth';
+import { authenticateToken, } from '../middleware/auth';
+import { authRateLimit, validateUserRegistration, validateUserLogin, validateProfileUpdate, handleValidationErrors, } from '../middleware/security';
+import { generateTokenPair, refreshTokenEndpoint, revokeAllSessions, } from '../middleware/sessionManager';
 const router = Router();
 /**
  * User registration endpoint
  * POST /api/auth/register
  */
-router.post('/register', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/register', authRateLimit, validateUserRegistration, handleValidationErrors, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { username, email, password, role = 'user', profile } = req.body;
         // Validation
@@ -117,16 +119,14 @@ router.post('/register', (req, res) => __awaiter(void 0, void 0, void 0, functio
             profile: profile || {},
         };
         const newUser = yield userModel.create(userData);
-        // Generate JWT token
-        const token = generateToken(newUser);
+        // Generate token pair
+        const tokenPair = generateTokenPair(newUser);
         // Create session
         const sessionModel = new Session(db);
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
         yield sessionModel.create({
             userId: newUser.id,
-            token,
-            expiresAt,
+            token: tokenPair.refreshToken,
+            expiresAt: tokenPair.refreshTokenExpiresAt,
         });
         // Return user data without password
         const { password: _ } = newUser, userWithoutPassword = __rest(newUser, ["password"]);
@@ -134,8 +134,10 @@ router.post('/register', (req, res) => __awaiter(void 0, void 0, void 0, functio
             success: true,
             data: {
                 user: userWithoutPassword,
-                token,
-                expiresAt: expiresAt.toISOString(),
+                accessToken: tokenPair.accessToken,
+                refreshToken: tokenPair.refreshToken,
+                accessTokenExpiresAt: tokenPair.accessTokenExpiresAt.toISOString(),
+                refreshTokenExpiresAt: tokenPair.refreshTokenExpiresAt.toISOString(),
             },
             timestamp: new Date().toISOString(),
         });
@@ -156,7 +158,7 @@ router.post('/register', (req, res) => __awaiter(void 0, void 0, void 0, functio
  * User login endpoint
  * POST /api/auth/login
  */
-router.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/login', authRateLimit, validateUserLogin, handleValidationErrors, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, username, password } = req.body;
         // Validation
@@ -205,16 +207,14 @@ router.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* 
             });
             return;
         }
-        // Generate JWT token
-        const token = generateToken(user);
+        // Generate token pair
+        const tokenPair = generateTokenPair(user);
         // Create session
         const sessionModel = new Session(db);
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
         yield sessionModel.create({
             userId: user.id,
-            token,
-            expiresAt,
+            token: tokenPair.refreshToken,
+            expiresAt: tokenPair.refreshTokenExpiresAt,
         });
         // Return user data without password
         const { password: _ } = user, userWithoutPassword = __rest(user, ["password"]);
@@ -222,8 +222,10 @@ router.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* 
             success: true,
             data: {
                 user: userWithoutPassword,
-                token,
-                expiresAt: expiresAt.toISOString(),
+                accessToken: tokenPair.accessToken,
+                refreshToken: tokenPair.refreshToken,
+                accessTokenExpiresAt: tokenPair.accessTokenExpiresAt.toISOString(),
+                refreshTokenExpiresAt: tokenPair.refreshTokenExpiresAt.toISOString(),
             },
             timestamp: new Date().toISOString(),
         });
@@ -317,7 +319,7 @@ router.get('/profile', authenticateToken, (req, res) => __awaiter(void 0, void 0
  * Update user profile
  * PUT /api/auth/profile
  */
-router.put('/profile', authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put('/profile', authenticateToken, validateProfileUpdate, handleValidationErrors, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!req.user) {
             res.status(401).json({
@@ -397,6 +399,50 @@ router.put('/profile', authenticateToken, (req, res) => __awaiter(void 0, void 0
             error: {
                 code: 'PROFILE_UPDATE_ERROR',
                 message: 'Failed to update profile',
+            },
+            timestamp: new Date().toISOString(),
+        });
+    }
+}));
+/**
+ * Token refresh endpoint
+ * POST /api/auth/refresh
+ */
+router.post('/refresh', refreshTokenEndpoint);
+/**
+ * Logout from all devices endpoint
+ * POST /api/auth/logout-all
+ */
+router.post('/logout-all', authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!req.user) {
+            res.status(401).json({
+                success: false,
+                error: {
+                    code: 'AUTHENTICATION_REQUIRED',
+                    message: 'Authentication required',
+                },
+                timestamp: new Date().toISOString(),
+            });
+            return;
+        }
+        // Revoke all sessions for the user
+        yield revokeAllSessions(req.user.id);
+        res.json({
+            success: true,
+            data: {
+                message: 'Logged out from all devices successfully',
+            },
+            timestamp: new Date().toISOString(),
+        });
+    }
+    catch (error) {
+        console.error('Logout all error:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'LOGOUT_ALL_ERROR',
+                message: 'Failed to logout from all devices',
             },
             timestamp: new Date().toISOString(),
         });

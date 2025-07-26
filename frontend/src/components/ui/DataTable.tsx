@@ -192,23 +192,23 @@ export function DataTable<T extends { id: string }>({
     <div className="w-full" data-testid={testId}>
       {/* Bulk Actions */}
       {bulkActions && selectedRows.size > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <div className="flex items-center justify-between">
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <span className="text-sm text-blue-700 dark:text-blue-300">
               {selectedRows.size} item{selectedRows.size !== 1 ? 's' : ''}{' '}
               selected
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-col xs:flex-row gap-2">
               <button
                 onClick={handleBulkDelete}
-                className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 touch-target transition-colors"
                 data-testid={`${testId}-bulk-delete`}
               >
                 Delete Selected
               </button>
               <button
                 onClick={() => setSelectedRows(new Set())}
-                className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                className="px-4 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 touch-target transition-colors"
                 data-testid={`${testId}-clear-selection`}
               >
                 Clear Selection
@@ -381,16 +381,16 @@ export function DataTable<T extends { id: string }>({
 
       {/* Pagination */}
       {pagination && (
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="mt-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-700 dark:text-gray-300">
+              <label className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                 Show:
               </label>
               <select
                 value={pagination.limit}
                 onChange={(e) => onLimitChange?.(Number(e.target.value))}
-                className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 touch-target"
                 data-testid={`${testId}-page-size`}
               >
                 {pageSizeOptions.map((size) => (
@@ -412,17 +412,17 @@ export function DataTable<T extends { id: string }>({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col xs:flex-row items-center gap-2">
             <button
               onClick={() => onPageChange?.(pagination.page - 1)}
               disabled={pagination.page <= 1}
-              className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full xs:w-auto px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 touch-target transition-colors"
               data-testid={`${testId}-prev-page`}
             >
               Previous
             </button>
 
-            <div className="flex gap-1">
+            <div className="flex gap-1 overflow-x-auto">
               {Array.from(
                 { length: Math.min(5, pagination.totalPages) },
                 (_, i) => {
@@ -441,7 +441,7 @@ export function DataTable<T extends { id: string }>({
                     <button
                       key={pageNum}
                       onClick={() => onPageChange?.(pageNum)}
-                      className={`px-3 py-1 text-sm border rounded ${
+                      className={`px-3 py-2 text-sm border rounded touch-target transition-colors ${
                         pagination.page === pageNum
                           ? 'bg-blue-600 text-white border-blue-600'
                           : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
@@ -458,7 +458,7 @@ export function DataTable<T extends { id: string }>({
             <button
               onClick={() => onPageChange?.(pagination.page + 1)}
               disabled={pagination.page >= pagination.totalPages}
-              className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full xs:w-auto px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 touch-target transition-colors"
               data-testid={`${testId}-next-page`}
             >
               Next

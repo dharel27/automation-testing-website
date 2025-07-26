@@ -14,6 +14,7 @@ import {
   requireAuth,
   optionalAuth,
 } from '../middleware/auth';
+import { uploadRateLimit } from '../middleware/security';
 
 const router = Router();
 
@@ -152,6 +153,7 @@ const upload = multer({
 // POST /api/files/upload - Upload files
 router.post(
   '/upload',
+  uploadRateLimit,
   authenticateToken,
   requireAuth,
   upload.array('files', 10),
