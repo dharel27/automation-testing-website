@@ -1,28 +1,19 @@
 import { Router, Request, Response } from 'express';
-import { Server } from 'socket.io';
-import logger from '../utils/logger';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-// Notification types
-export enum NotificationType {
-  INFO = 'info',
-  SUCCESS = 'success',
-  WARNING = 'warning',
-  ERROR = 'error',
-}
-
-export interface Notification {
+// In-memory storage for notifications (in production, use a database)
+interface Notification {
   id: string;
-  type: NotificationType;
+  type: 'info' | 'success' | 'warning' | 'error';
   title: string;
   message: string;
   timestamp: Date;
   userId?: string;
-  data?: any;
+  read: boolean;
 }
 
-// In-memory storage for demo purposes
 const notifications: Notification[] = [];
 
 // Get all notifications
@@ -38,14 +29,16 @@ router.get('/', (req: Request, res: Response) => {
 
   res.json({
     success: true,
-    data: filteredNotifications.slice(-50), // Return last 50 notifications
-    timestamp: new Date().toISOString(),
+    data: filteredNotifications.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    ),
   });
 });
 
 // Create a new notification
 router.post('/', (req: Request, res: Response) => {
-  const { type, title, message, userId, data } = req.body;
+  const { type, title, message, userId } = req.body;
 
   if (!type || !title || !message) {
     return res.status(400).json({
@@ -54,129 +47,131 @@ router.post('/', (req: Request, res: Response) => {
         code: 'VALIDATION_ERROR',
         message: 'Type, title, and message are required',
       },
-      timestamp: new Date().toISOString(),
     });
   }
 
   const notification: Notification = {
-    id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    type: type as NotificationType,
+    id: uuidv4(),
+    type,
     title,
     message,
     timestamp: new Date(),
     userId,
-    data,
+    read: false,
   };
 
   notifications.push(notification);
 
-  // Emit to all connected clients
-  const io: Server = req.app.get('io');
-  if (io) {
-    if (userId) {
-      // Send to specific user if userId provided
-      io.to(`user_${userId}`).emit('notification', notification);
-    } else {
-      // Broadcast to all clients in notifications room
-      io.to('notifications').emit('notification', notification);
-    }
+  // Emit to all connected clients or specific user
+  const io = req.app.get('io');
+  if (userId) {
+    io.to(`user_${userId}`).emit('notification', notification);
+  } else {
+    io.emit('notification', notification);
   }
-
-  logger.info(`Notification created: ${notification.id}`);
 
   res.status(201).json({
     success: true,
     data: notification,
-    timestamp: new Date().toISOString(),
   });
 });
 
-// Simulate real-time notifications for testing
-router.post('/simulate', (req: Request, res: Response) => {
-  const io: Server = req.app.get('io');
+// Mark notification as read
+router.patch('/:id/read', (req: Request, res: Response) => {
+  const { id } = req.params;
 
-  if (!io) {
-    return res.status(500).json({
+  const notification = notifications.find((n) => n.id === id);
+  if (!notification) {
+    return res.status(404).json({
       success: false,
       error: {
-        code: 'WEBSOCKET_ERROR',
-        message: 'WebSocket server not available',
+        code: 'NOT_FOUND',
+        message: 'Notification not found',
       },
-      timestamp: new Date().toISOString(),
     });
   }
 
-  const notificationTypes = [
-    {
-      type: NotificationType.INFO,
-      title: 'System Update',
-      message: 'System maintenance scheduled for tonight',
-    },
-    {
-      type: NotificationType.SUCCESS,
-      title: 'Task Completed',
-      message: 'Your data export has been completed successfully',
-    },
-    {
-      type: NotificationType.WARNING,
-      title: 'Storage Warning',
-      message: 'You are running low on storage space',
-    },
-    {
-      type: NotificationType.ERROR,
-      title: 'Connection Error',
-      message: 'Failed to connect to external service',
-    },
-  ];
+  notification.read = true;
 
-  let count = 0;
-  const interval = setInterval(() => {
-    if (count >= 5) {
-      clearInterval(interval);
+  res.json({
+    success: true,
+    data: notification,
+  });
+});
+
+// Delete notification
+router.delete('/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const index = notifications.findIndex((n) => n.id === id);
+  if (index === -1) {
+    return res.status(404).json({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Notification not found',
+      },
+    });
+  }
+
+  notifications.splice(index, 1);
+
+  res.json({
+    success: true,
+    data: { message: 'Notification deleted successfully' },
+  });
+});
+
+// Simulate real-time notifications (for testing)
+router.post('/simulate', (req: Request, res: Response) => {
+  const { count = 1, interval = 1000, userId } = req.body;
+
+  let sent = 0;
+  const intervalId = setInterval(() => {
+    if (sent >= count) {
+      clearInterval(intervalId);
       return;
     }
 
-    const randomNotif =
-      notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+    const types: Array<'info' | 'success' | 'warning' | 'error'> = [
+      'info',
+      'success',
+      'warning',
+      'error',
+    ];
+    const randomType = types[Math.floor(Math.random() * types.length)];
+
     const notification: Notification = {
-      id: `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: randomNotif.type,
-      title: randomNotif.title,
-      message: `${randomNotif.message} (${count + 1}/5)`,
+      id: uuidv4(),
+      type: randomType,
+      title: `Test Notification ${sent + 1}`,
+      message: `This is a simulated ${randomType} notification for testing purposes.`,
       timestamp: new Date(),
-      data: { simulation: true, count: count + 1 },
+      userId,
+      read: false,
     };
 
     notifications.push(notification);
-    io.to('notifications').emit('notification', notification);
 
-    logger.info(`Simulated notification sent: ${notification.id}`);
-    count++;
-  }, 2000);
+    const io = req.app.get('io');
+    if (userId) {
+      io.to(`user_${userId}`).emit('notification', notification);
+    } else {
+      io.emit('notification', notification);
+    }
+
+    sent++;
+  }, interval);
 
   res.json({
     success: true,
-    message:
-      'Simulation started - 5 notifications will be sent over 10 seconds',
-    timestamp: new Date().toISOString(),
+    data: { message: `Simulating ${count} notifications every ${interval}ms` },
   });
 });
 
-// Clear all notifications
-router.delete('/', (req: Request, res: Response) => {
-  const clearedCount = notifications.length;
+// Export function to clear notifications for testing
+export const clearNotifications = () => {
   notifications.length = 0;
-
-  const io: Server = req.app.get('io');
-  if (io) {
-    io.to('notifications').emit('notifications-cleared');
-  }
-
-  res.json({
-    success: true,
-    message: `Cleared ${clearedCount} notifications`,
-    timestamp: new Date().toISOString(),
-  });
-});
+};
 
 export default router;

@@ -7,37 +7,26 @@ import React, {
 } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-export enum NotificationType {
-  INFO = 'info',
-  SUCCESS = 'success',
-  WARNING = 'warning',
-  ERROR = 'error',
-}
-
 export interface Notification {
   id: string;
-  type: NotificationType;
+  type: 'info' | 'success' | 'warning' | 'error';
   title: string;
   message: string;
   timestamp: Date;
   userId?: string;
-  data?: any;
-}
-
-export interface Toast extends Notification {
-  duration?: number;
-  isVisible: boolean;
+  read: boolean;
 }
 
 interface NotificationContextType {
   notifications: Notification[];
-  toasts: Toast[];
-  socket: Socket | null;
+  addNotification: (
+    notification: Omit<Notification, 'id' | 'timestamp' | 'read'>
+  ) => void;
+  removeNotification: (id: string) => void;
+  markAsRead: (id: string) => void;
+  clearAll: () => void;
+  unreadCount: number;
   isConnected: boolean;
-  addToast: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
-  removeToast: (id: string) => void;
-  clearNotifications: () => void;
-  simulateNotifications: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
@@ -51,54 +40,33 @@ interface NotificationProviderProps {
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
 }) => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => {
-    // Initialize WebSocket connection
+    // Initialize socket connection
     const newSocket = io('http://localhost:3001');
+    setSocket(newSocket);
 
+    // Connection event handlers
     newSocket.on('connect', () => {
-      console.log('Connected to WebSocket server');
       setIsConnected(true);
+      console.log('Connected to notification server');
     });
 
     newSocket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
       setIsConnected(false);
+      console.log('Disconnected from notification server');
     });
 
-    // Listen for notifications
+    // Listen for incoming notifications
     newSocket.on('notification', (notification: Notification) => {
-      console.log('Received notification:', notification);
-
-      // Add to notifications list
-      setNotifications((prev) => [...prev, notification]);
-
-      // Add as toast
-      const toast: Toast = {
-        ...notification,
-        isVisible: true,
-        duration: getToastDuration(notification.type),
-      };
-
-      setToasts((prev) => [...prev, toast]);
-
-      // Auto-remove toast after duration
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-      }, toast.duration);
+      setNotifications((prev) => [notification, ...prev]);
     });
 
-    // Listen for notifications cleared event
-    newSocket.on('notifications-cleared', () => {
-      setNotifications([]);
-      setToasts([]);
-    });
-
-    setSocket(newSocket);
+    // Join notifications room
+    newSocket.emit('join-room', 'notifications');
 
     // Cleanup on unmount
     return () => {
@@ -106,88 +74,43 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     };
   }, []);
 
-  const getToastDuration = (type: NotificationType): number => {
-    switch (type) {
-      case NotificationType.ERROR:
-        return 8000; // 8 seconds for errors
-      case NotificationType.WARNING:
-        return 6000; // 6 seconds for warnings
-      case NotificationType.SUCCESS:
-        return 4000; // 4 seconds for success
-      case NotificationType.INFO:
-      default:
-        return 5000; // 5 seconds for info
-    }
-  };
-
-  const addToast = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    const toast: Toast = {
-      ...notification,
-      id: `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  const addNotification = (
+    notificationData: Omit<Notification, 'id' | 'timestamp' | 'read'>
+  ) => {
+    const notification: Notification = {
+      ...notificationData,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
-      isVisible: true,
-      duration: getToastDuration(notification.type),
+      read: false,
     };
 
-    setToasts((prev) => [...prev, toast]);
-    setNotifications((prev) => [...prev, toast]);
-
-    // Auto-remove toast after duration
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-    }, toast.duration);
+    setNotifications((prev) => [notification, ...prev]);
   };
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+  const removeNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
-  const clearNotifications = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/notifications', {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setNotifications([]);
-        setToasts([]);
-      }
-    } catch (error) {
-      console.error('Failed to clear notifications:', error);
-    }
+  const markAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
   };
 
-  const simulateNotifications = async () => {
-    try {
-      const response = await fetch(
-        'http://localhost:3001/api/notifications/simulate',
-        {
-          method: 'POST',
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to simulate notifications');
-      }
-    } catch (error) {
-      console.error('Failed to simulate notifications:', error);
-      addToast({
-        type: NotificationType.ERROR,
-        title: 'Simulation Error',
-        message: 'Failed to start notification simulation',
-      });
-    }
+  const clearAll = () => {
+    setNotifications([]);
   };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const value: NotificationContextType = {
     notifications,
-    toasts,
-    socket,
+    addNotification,
+    removeNotification,
+    markAsRead,
+    clearAll,
+    unreadCount,
     isConnected,
-    addToast,
-    removeToast,
-    clearNotifications,
-    simulateNotifications,
   };
 
   return (

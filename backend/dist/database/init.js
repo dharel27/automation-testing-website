@@ -7,9 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { getDatabase } from './connection';
-import { MigrationRunner } from './migrations';
-import { User, Product, Session, FileRecord } from '../models/index';
+import { getDatabase } from './connection.js';
+import { MigrationRunner } from './migrations.js';
+import { User, Product, Session, FileRecord } from '../models/index.js';
 export class DatabaseManager {
     constructor() {
         this.db = null;

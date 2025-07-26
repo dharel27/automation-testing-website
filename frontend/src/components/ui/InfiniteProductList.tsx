@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   useInfiniteScroll,
-  useIntersectionObserver,
+  useInfiniteScrollSentinel,
 } from '../../hooks/useInfiniteScroll';
+import axios from 'axios';
 
 interface Product {
   id: string;
@@ -23,221 +24,293 @@ interface InfiniteProductListProps {
   className?: string;
 }
 
-export const InfiniteProductList: React.FC<InfiniteProductListProps> = ({
+const InfiniteProductList: React.FC<InfiniteProductListProps> = ({
   searchQuery = '',
   category = '',
   className = '',
 }) => {
-  const fetchProducts = async (page: number, limit: number) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
+  const { SentinelComponent } = useInfiniteScrollSentinel();
 
-    if (searchQuery) {
-      params.append('search', searchQuery);
-    }
-    if (category) {
-      params.append('category', category);
-    }
+  const fetchProducts = useCallback(
+    async (page: number, pageSize: number) => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: pageSize.toString(),
+      });
 
-    const response = await fetch(
-      `http://localhost:3001/api/products?${params}`
-    );
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      if (category) {
+        params.append('category', category);
+      }
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch products');
-    }
+      const response = await axios.get(
+        `http://localhost:3001/api/products?${params}`
+      );
 
-    const result = await response.json();
+      if (!response.data.success) {
+        throw new Error(
+          response.data.error?.message || 'Failed to fetch products'
+        );
+      }
 
-    return {
-      data: result.data.products || [],
-      hasMore: result.data.hasMore || false,
-      total: result.data.total || 0,
-    };
-  };
+      const { data: products, pagination } = response.data.data;
+
+      return {
+        data: products,
+        hasMore: pagination.hasMore,
+        total: pagination.total,
+      };
+    },
+    [searchQuery, category]
+  );
 
   const {
     data: products,
     loading,
     error,
     hasMore,
-    loadMore,
-    refresh,
     total,
+    reset,
   } = useInfiniteScroll({
-    fetchData: fetchProducts,
-    limit: 12,
+    fetchMore: fetchProducts,
+    pageSize: 12,
+    threshold: 200,
   });
 
-  const loadMoreRef = useIntersectionObserver(loadMore);
+  // Reset when search query or category changes
+  React.useEffect(() => {
+    reset();
+  }, [searchQuery, category, reset]);
 
-  const ProductCard: React.FC<{ product: Product }> = ({ product }) => (
-    <div
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 transition-transform hover:scale-105"
-      data-testid="product-card"
-      data-product-id={product.id}
-    >
-      {product.imageUrl && (
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          className="w-full h-48 object-cover rounded-md mb-3"
-          data-testid="product-image"
-        />
-      )}
-      <h3
-        className="font-semibold text-lg mb-2 text-gray-900 dark:text-white"
-        data-testid="product-name"
-      >
-        {product.name}
-      </h3>
-      <p
-        className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2"
-        data-testid="product-description"
-      >
-        {product.description}
-      </p>
-      <div className="flex justify-between items-center mb-3">
-        <span
-          className="text-xl font-bold text-green-600 dark:text-green-400"
-          data-testid="product-price"
-        >
-          ${product.price.toFixed(2)}
-        </span>
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            product.inStock
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-          }`}
-          data-testid="product-stock-status"
-        >
-          {product.inStock ? 'In Stock' : 'Out of Stock'}
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-1 mb-3">
-        {product.tags.map((tag, index) => (
-          <span
-            key={index}
-            className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full"
-            data-testid="product-tag"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">
-        Category: {product.category}
-      </div>
-    </div>
-  );
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(price);
+  };
 
-  const LoadingSpinner: React.FC = () => (
-    <div
-      className="flex justify-center items-center py-8"
-      data-testid="loading-spinner"
-    >
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <span className="ml-2 text-gray-600 dark:text-gray-300">
-        Loading products...
+  const getStockStatus = (inStock: boolean) => {
+    return inStock ? (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        In Stock
       </span>
-    </div>
-  );
+    ) : (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+        Out of Stock
+      </span>
+    );
+  };
 
   if (error) {
     return (
-      <div className="text-center py-8" data-testid="error-message">
-        <div className="text-red-600 dark:text-red-400 mb-4">
-          Error: {error}
+      <div
+        className={`text-center py-8 ${className}`}
+        data-testid="product-list-error"
+      >
+        <div className="text-red-600 mb-4">
+          <svg
+            className="mx-auto h-12 w-12"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"
+            />
+          </svg>
         </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          Error Loading Products
+        </h3>
+        <p className="text-gray-500 mb-4">{error}</p>
         <button
-          onClick={refresh}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          onClick={reset}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           data-testid="retry-button"
         >
-          Retry
+          Try Again
         </button>
       </div>
     );
   }
 
   return (
-    <div
-      className={`infinite-product-list ${className}`}
-      data-testid="infinite-product-list"
-    >
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Products
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300">
+    <div className={className} data-testid="infinite-product-list">
+      {/* Results summary */}
+      <div className="mb-6 text-sm text-gray-600" data-testid="results-summary">
+        {total > 0 && (
+          <p>
             Showing {products.length} of {total} products
+            {searchQuery && ` for "${searchQuery}"`}
+            {category && ` in ${category}`}
           </p>
-        </div>
-        <button
-          onClick={refresh}
-          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          data-testid="refresh-button"
-        >
-          Refresh
-        </button>
+        )}
       </div>
 
-      {/* Products Grid */}
-      <div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        data-testid="products-grid"
-      >
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+      {/* Product grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {products.map((product, index) => (
+          <div
+            key={product.id}
+            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
+            data-testid={`product-card-${index}`}
+          >
+            {/* Product image placeholder */}
+            <div className="h-48 bg-gray-200 flex items-center justify-center">
+              {product.imageUrl ? (
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <svg
+                  className="h-16 w-16 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              )}
+            </div>
+
+            {/* Product details */}
+            <div className="p-4">
+              <div className="flex justify-between items-start mb-2">
+                <h3
+                  className="text-lg font-semibold text-gray-900 truncate"
+                  data-testid="product-name"
+                >
+                  {product.name}
+                </h3>
+                {getStockStatus(product.inStock)}
+              </div>
+
+              <p
+                className="text-gray-600 text-sm mb-3 line-clamp-2"
+                data-testid="product-description"
+              >
+                {product.description}
+              </p>
+
+              <div className="flex justify-between items-center mb-3">
+                <span
+                  className="text-2xl font-bold text-blue-600"
+                  data-testid="product-price"
+                >
+                  {formatPrice(product.price)}
+                </span>
+                <span
+                  className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded"
+                  data-testid="product-category"
+                >
+                  {product.category}
+                </span>
+              </div>
+
+              {/* Tags */}
+              {product.tags.length > 0 && (
+                <div
+                  className="flex flex-wrap gap-1 mb-3"
+                  data-testid="product-tags"
+                >
+                  {product.tags.slice(0, 3).map((tag, tagIndex) => (
+                    <span
+                      key={tagIndex}
+                      className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {product.tags.length > 3 && (
+                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                      +{product.tags.length - 3} more
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Action button */}
+              <button
+                className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  product.inStock
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                disabled={!product.inStock}
+                data-testid="add-to-cart-button"
+              >
+                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+              </button>
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Loading indicator */}
-      {loading && <LoadingSpinner />}
-
-      {/* Load more trigger */}
-      {hasMore && !loading && (
+      {loading && (
         <div
-          ref={loadMoreRef}
-          className="h-10 flex items-center justify-center"
-          data-testid="load-more-trigger"
+          className="flex justify-center items-center py-8"
+          data-testid="loading-indicator"
         >
-          <span className="text-gray-500 dark:text-gray-400 text-sm">
-            Scroll down to load more...
-          </span>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Loading more products...</span>
         </div>
       )}
 
-      {/* End of list message */}
+      {/* No more results */}
       {!hasMore && products.length > 0 && (
         <div
-          className="text-center py-8 text-gray-500 dark:text-gray-400"
-          data-testid="end-of-list"
+          className="text-center py-8 text-gray-500"
+          data-testid="no-more-results"
         >
-          You've reached the end of the product list!
+          <p>You've reached the end of the product list.</p>
         </div>
       )}
 
-      {/* Empty state */}
+      {/* No results */}
       {!loading && products.length === 0 && (
-        <div className="text-center py-12" data-testid="empty-state">
-          <div className="text-gray-500 dark:text-gray-400 mb-4">
-            No products found
-          </div>
-          <button
-            onClick={refresh}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            data-testid="refresh-empty-button"
+        <div className="text-center py-12" data-testid="no-results">
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            Refresh
-          </button>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2 2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1H7a1 1 0 00-1 1v1m8 0V4a1 1 0 00-1-1H9a1 1 0 00-1 1v1m4 0h-2m0 0V4a1 1 0 00-1-1h-2a1 1 0 00-1 1v1m4 0V4a1 1 0 00-1-1h-2a1 1 0 00-1 1v1"
+            />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            No products found
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {searchQuery || category
+              ? 'Try adjusting your search criteria.'
+              : 'No products are available at the moment.'}
+          </p>
         </div>
       )}
+
+      {/* Infinite scroll sentinel */}
+      <SentinelComponent />
     </div>
   );
 };
+
+export default InfiniteProductList;

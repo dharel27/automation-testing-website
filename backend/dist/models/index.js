@@ -1,4 +1,4 @@
-export { User, } from './User';
-export { Product, } from './Product';
-export { Session } from './Session';
-export { FileRecord, } from './FileRecord';
+export { User, } from './User.js';
+export { Product, } from './Product.js';
+export { Session, } from './Session.js';
+export { FileRecord, } from './FileRecord.js';

@@ -1,14 +1,16 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
-import { RealTimePage } from '../RealTimePage';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import axios from 'axios';
+import RealTimePage from '../RealTimePage';
 import { NotificationProvider } from '../../contexts/NotificationContext';
+
+// Mock axios
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 // Mock socket.io-client
 const mockSocket = {
   on: jest.fn(),
-  off: jest.fn(),
   emit: jest.fn(),
   close: jest.fn(),
 };
@@ -17,335 +19,303 @@ jest.mock('socket.io-client', () => ({
   io: jest.fn(() => mockSocket),
 }));
 
-// Mock the child components
-jest.mock('../../components/ui/InfiniteProductList', () => ({
-  InfiniteProductList: ({ searchQuery, category, className }: any) => (
-    <div
-      data-testid="infinite-product-list"
-      data-search-query={searchQuery}
-      data-category={category}
-      className={className}
-    >
-      Infinite Product List Component
-    </div>
-  ),
-}));
+// Mock the components
+jest.mock('../../components/ui/RealTimeDataDisplay', () => {
+  return function MockRealTimeDataDisplay(props: any) {
+    return (
+      <div data-testid="real-time-metrics" data-title={props.title}>
+        Mock RealTimeDataDisplay
+      </div>
+    );
+  };
+});
 
-jest.mock('../../components/ui/RealTimeDataDisplay', () => ({
-  RealTimeDataDisplay: ({ title, updateInterval, className }: any) => (
-    <div
-      data-testid="real-time-data-display"
-      data-title={title}
-      data-update-interval={updateInterval}
-      className={className}
-    >
-      Real Time Data Display Component
-    </div>
-  ),
-}));
+jest.mock('../../components/ui/InfiniteProductList', () => {
+  return function MockInfiniteProductList(props: any) {
+    return (
+      <div
+        data-testid="infinite-product-list"
+        data-search-query={props.searchQuery}
+        data-category={props.selectedCategory}
+      >
+        Mock InfiniteProductList
+      </div>
+    );
+  };
+});
 
-// Mock fetch
-global.fetch = jest.fn();
-
-const renderWithProviders = (component: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      <NotificationProvider>{component}</NotificationProvider>
-    </BrowserRouter>
-  );
+const renderWithNotificationProvider = (component: React.ReactElement) => {
+  return render(<NotificationProvider>{component}</NotificationProvider>);
 };
 
 describe('RealTimePage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockClear();
   });
 
-  it('should render the page with all main sections', () => {
-    renderWithProviders(<RealTimePage />);
+  it('should render page with all sections', () => {
+    renderWithNotificationProvider(<RealTimePage />);
 
-    expect(screen.getByText('Real-Time Features Demo')).toBeInTheDocument();
-    expect(
-      screen.getByText(/This page demonstrates real-time features/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId('websocket-status-indicator')
-    ).toBeInTheDocument();
-    expect(screen.getByText('Notification Testing')).toBeInTheDocument();
-    expect(
-      screen.getByText('Infinite Scroll Product List')
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('real-time-page')).toBeInTheDocument();
+    expect(screen.getByTestId('page-title')).toHaveTextContent(
+      'Real-Time Features'
+    );
+    expect(screen.getByTestId('page-description')).toHaveTextContent(
+      'Test real-time notifications, infinite scroll, and live data updates'
+    );
+    expect(screen.getByTestId('notification-controls')).toBeInTheDocument();
+    expect(screen.getByTestId('real-time-metrics')).toBeInTheDocument();
+    expect(screen.getByTestId('recent-notifications')).toBeInTheDocument();
+    expect(screen.getByTestId('search-controls')).toBeInTheDocument();
+    expect(screen.getByTestId('infinite-product-list')).toBeInTheDocument();
   });
 
-  it('should display WebSocket connection status', () => {
-    renderWithProviders(<RealTimePage />);
+  it('should show connection status', () => {
+    renderWithNotificationProvider(<RealTimePage />);
 
-    expect(
-      screen.getByText('WebSocket Status: Disconnected')
-    ).toBeInTheDocument();
-    expect(screen.getByText('Notifications received: 0')).toBeInTheDocument();
+    expect(screen.getByTestId('connection-info')).toBeInTheDocument();
+    expect(screen.getByText('Disconnected')).toBeInTheDocument();
+  });
+
+  it('should show connected status when socket connects', async () => {
+    renderWithNotificationProvider(<RealTimePage />);
+
+    // Simulate socket connection
+    const connectHandler = mockSocket.on.mock.calls.find(
+      (call) => call[0] === 'connect'
+    )?.[1];
+    if (connectHandler) connectHandler();
+
+    await waitFor(() => {
+      expect(screen.getByText('Connected')).toBeInTheDocument();
+    });
   });
 
   it('should render notification test buttons', () => {
-    renderWithProviders(<RealTimePage />);
+    renderWithNotificationProvider(<RealTimePage />);
 
     expect(screen.getByTestId('test-info-notification')).toBeInTheDocument();
     expect(screen.getByTestId('test-success-notification')).toBeInTheDocument();
     expect(screen.getByTestId('test-warning-notification')).toBeInTheDocument();
     expect(screen.getByTestId('test-error-notification')).toBeInTheDocument();
     expect(screen.getByTestId('simulate-notifications')).toBeInTheDocument();
-    expect(screen.getByTestId('clear-notifications')).toBeInTheDocument();
   });
 
-  it('should handle test notification button clicks', async () => {
-    const user = userEvent.setup();
-
-    renderWithProviders(<RealTimePage />);
+  it('should add notifications when test buttons are clicked', async () => {
+    renderWithNotificationProvider(<RealTimePage />);
 
     // Test info notification
-    const infoButton = screen.getByTestId('test-info-notification');
-    await user.click(infoButton);
+    fireEvent.click(screen.getByTestId('test-info-notification'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Info Notification')).toBeInTheDocument();
+    });
 
     // Test success notification
-    const successButton = screen.getByTestId('test-success-notification');
-    await user.click(successButton);
+    fireEvent.click(screen.getByTestId('test-success-notification'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Success Notification')).toBeInTheDocument();
+    });
 
     // Test warning notification
-    const warningButton = screen.getByTestId('test-warning-notification');
-    await user.click(warningButton);
+    fireEvent.click(screen.getByTestId('test-warning-notification'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Warning Notification')).toBeInTheDocument();
+    });
 
     // Test error notification
-    const errorButton = screen.getByTestId('test-error-notification');
-    await user.click(errorButton);
-
-    // Should have created notifications (tested via context)
-    expect(screen.getByText('Notifications received: 4')).toBeInTheDocument();
-  });
-
-  it('should handle simulate notifications button', async () => {
-    const user = userEvent.setup();
-
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true }),
-    });
-
-    renderWithProviders(<RealTimePage />);
-
-    const simulateButton = screen.getByTestId('simulate-notifications');
-    await user.click(simulateButton);
+    fireEvent.click(screen.getByTestId('test-error-notification'));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(screen.getByText('Test Error Notification')).toBeInTheDocument();
+    });
+  });
+
+  it('should simulate multiple notifications', async () => {
+    mockedAxios.post.mockResolvedValueOnce({ data: { success: true } });
+
+    renderWithNotificationProvider(<RealTimePage />);
+
+    fireEvent.click(screen.getByTestId('simulate-notifications'));
+
+    await waitFor(() => {
+      expect(mockedAxios.post).toHaveBeenCalledWith(
         'http://localhost:3001/api/notifications/simulate',
-        { method: 'POST' }
+        {
+          count: 5,
+          interval: 1000,
+        }
       );
     });
-  });
-
-  it('should handle clear notifications button', async () => {
-    const user = userEvent.setup();
-
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true }),
-    });
-
-    renderWithProviders(<RealTimePage />);
-
-    const clearButton = screen.getByTestId('clear-notifications');
-    await user.click(clearButton);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/notifications',
-        { method: 'DELETE' }
-      );
+      expect(screen.getByText('Simulation Started')).toBeInTheDocument();
     });
   });
 
-  it('should handle API errors for simulate notifications', async () => {
-    const user = userEvent.setup();
+  it('should handle simulation error', async () => {
+    mockedAxios.post.mockRejectedValueOnce(new Error('Network error'));
 
-    (global.fetch as jest.Mock).mockRejectedValueOnce(
-      new Error('Network error')
-    );
+    renderWithNotificationProvider(<RealTimePage />);
 
-    renderWithProviders(<RealTimePage />);
-
-    const simulateButton = screen.getByTestId('simulate-notifications');
-    await user.click(simulateButton);
+    fireEvent.click(screen.getByTestId('simulate-notifications'));
 
     await waitFor(() => {
-      // Should show error notification
-      expect(screen.getByText('Notifications received: 1')).toBeInTheDocument();
+      expect(screen.getByText('Simulation Failed')).toBeInTheDocument();
     });
   });
 
-  it('should render search and category controls', () => {
-    renderWithProviders(<RealTimePage />);
+  it('should show unread notification count', async () => {
+    renderWithNotificationProvider(<RealTimePage />);
 
-    expect(screen.getByTestId('product-search-input')).toBeInTheDocument();
-    expect(screen.getByTestId('category-select')).toBeInTheDocument();
+    // Add a notification
+    fireEvent.click(screen.getByTestId('test-info-notification'));
 
-    // Check category options
-    expect(screen.getByText('All Categories')).toBeInTheDocument();
-    expect(screen.getByText('Electronics')).toBeInTheDocument();
-    expect(screen.getByText('Clothing')).toBeInTheDocument();
-    expect(screen.getByText('Books')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('unread-count')).toHaveTextContent('1 unread');
+    });
   });
 
-  it('should update search query when input changes', async () => {
-    const user = userEvent.setup();
+  it('should handle search input changes', () => {
+    renderWithNotificationProvider(<RealTimePage />);
 
-    renderWithProviders(<RealTimePage />);
-
-    const searchInput = screen.getByTestId('product-search-input');
-    await user.type(searchInput, 'test search');
+    const searchInput = screen.getByTestId('search-input');
+    fireEvent.change(searchInput, { target: { value: 'test search' } });
 
     expect(searchInput).toHaveValue('test search');
-
-    // Check that the InfiniteProductList receives the search query
-    const productList = screen.getByTestId('infinite-product-list');
-    expect(productList).toHaveAttribute('data-search-query', 'test search');
   });
 
-  it('should update category when select changes', async () => {
-    const user = userEvent.setup();
-
-    renderWithProviders(<RealTimePage />);
+  it('should handle category selection changes', () => {
+    renderWithNotificationProvider(<RealTimePage />);
 
     const categorySelect = screen.getByTestId('category-select');
-    await user.selectOptions(categorySelect, 'Electronics');
+    fireEvent.change(categorySelect, { target: { value: 'Electronics' } });
 
     expect(categorySelect).toHaveValue('Electronics');
+  });
 
-    // Check that the InfiniteProductList receives the category
+  it('should clear search and category filters', () => {
+    renderWithNotificationProvider(<RealTimePage />);
+
+    const searchInput = screen.getByTestId('search-input');
+    const categorySelect = screen.getByTestId('category-select');
+    const clearButton = screen.getByTestId('clear-search-button');
+
+    // Set some values
+    fireEvent.change(searchInput, { target: { value: 'test search' } });
+    fireEvent.change(categorySelect, { target: { value: 'Electronics' } });
+
+    expect(searchInput).toHaveValue('test search');
+    expect(categorySelect).toHaveValue('Electronics');
+
+    // Clear filters
+    fireEvent.click(clearButton);
+
+    expect(searchInput).toHaveValue('');
+    expect(categorySelect).toHaveValue('');
+  });
+
+  it('should render all category options', () => {
+    renderWithNotificationProvider(<RealTimePage />);
+
+    const categorySelect = screen.getByTestId('category-select');
+    const options = categorySelect.querySelectorAll('option');
+
+    expect(options).toHaveLength(9); // 8 categories + "All Categories"
+    expect(options[0]).toHaveTextContent('All Categories');
+    expect(options[1]).toHaveTextContent('Electronics');
+    expect(options[2]).toHaveTextContent('Clothing');
+    expect(options[3]).toHaveTextContent('Books');
+    expect(options[4]).toHaveTextContent('Home & Garden');
+    expect(options[5]).toHaveTextContent('Sports');
+    expect(options[6]).toHaveTextContent('Toys');
+    expect(options[7]).toHaveTextContent('Food');
+    expect(options[8]).toHaveTextContent('Beauty');
+  });
+
+  it('should show no notifications message initially', () => {
+    renderWithNotificationProvider(<RealTimePage />);
+
+    expect(screen.getByTestId('no-notifications')).toHaveTextContent(
+      'No notifications yet'
+    );
+  });
+
+  it('should display recent notifications', async () => {
+    renderWithNotificationProvider(<RealTimePage />);
+
+    // Add some notifications
+    fireEvent.click(screen.getByTestId('test-info-notification'));
+    fireEvent.click(screen.getByTestId('test-success-notification'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Recent Notifications (2)')).toBeInTheDocument();
+      expect(screen.getByTestId('notification-item-0')).toBeInTheDocument();
+      expect(screen.getByTestId('notification-item-1')).toBeInTheDocument();
+    });
+  });
+
+  it('should limit recent notifications display to 10 items', async () => {
+    renderWithNotificationProvider(<RealTimePage />);
+
+    // Add 12 notifications
+    for (let i = 0; i < 12; i++) {
+      fireEvent.click(screen.getByTestId('test-info-notification'));
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText('Recent Notifications (12)')).toBeInTheDocument();
+
+      // Should only show 10 items
+      expect(screen.getByTestId('notification-item-9')).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('notification-item-10')
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('should pass search query and category to InfiniteProductList', () => {
+    renderWithNotificationProvider(<RealTimePage />);
+
+    const searchInput = screen.getByTestId('search-input');
+    const categorySelect = screen.getByTestId('category-select');
+
+    fireEvent.change(searchInput, { target: { value: 'laptop' } });
+    fireEvent.change(categorySelect, { target: { value: 'Electronics' } });
+
     const productList = screen.getByTestId('infinite-product-list');
+    expect(productList).toHaveAttribute('data-search-query', 'laptop');
     expect(productList).toHaveAttribute('data-category', 'Electronics');
   });
 
-  it('should handle "All Categories" selection', async () => {
-    const user = userEvent.setup();
+  it('should have proper accessibility attributes', () => {
+    renderWithNotificationProvider(<RealTimePage />);
 
-    renderWithProviders(<RealTimePage />);
-
+    const searchInput = screen.getByTestId('search-input');
     const categorySelect = screen.getByTestId('category-select');
 
-    // First select a specific category
-    await user.selectOptions(categorySelect, 'Electronics');
-    expect(categorySelect).toHaveValue('Electronics');
-
-    // Then select "All Categories"
-    await user.selectOptions(categorySelect, 'All Categories');
-    expect(categorySelect).toHaveValue('All Categories');
-
-    // Should pass empty string to the component
-    const productList = screen.getByTestId('infinite-product-list');
-    expect(productList).toHaveAttribute('data-category', '');
-  });
-
-  it('should render child components with correct props', () => {
-    renderWithProviders(<RealTimePage />);
-
-    // Check RealTimeDataDisplay props
-    const dataDisplay = screen.getByTestId('real-time-data-display');
-    expect(dataDisplay).toHaveAttribute('data-title', 'Live System Metrics');
-    expect(dataDisplay).toHaveAttribute('data-update-interval', '2000');
-    expect(dataDisplay).toHaveClass('w-full');
-
-    // Check InfiniteProductList props
-    const productList = screen.getByTestId('infinite-product-list');
-    expect(productList).toHaveAttribute('data-search-query', '');
-    expect(productList).toHaveAttribute('data-category', '');
-    expect(productList).toHaveClass('mb-8');
-  });
-
-  it('should render automation testing notes', () => {
-    renderWithProviders(<RealTimePage />);
-
-    expect(screen.getByText('Automation Testing Notes')).toBeInTheDocument();
-    expect(
-      screen.getByText(/WebSocket connection status is indicated/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Toast notifications appear in the top-right/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Infinite scroll triggers when scrolling/)
-    ).toBeInTheDocument();
-  });
-
-  it('should have proper accessibility attributes', () => {
-    renderWithProviders(<RealTimePage />);
-
-    const searchInput = screen.getByTestId('product-search-input');
     expect(searchInput).toHaveAttribute(
       'placeholder',
       'Search by name, description, or tags...'
     );
-
-    const categorySelect = screen.getByTestId('category-select');
-    expect(categorySelect).toHaveAccessibleName('Category');
-
-    const searchLabel = screen.getByText('Search Products');
-    expect(searchLabel).toBeInTheDocument();
+    expect(screen.getByLabelText('Search Products')).toBe(searchInput);
+    expect(screen.getByLabelText('Category')).toBe(categorySelect);
   });
 
-  it('should handle failed API response for simulate notifications', async () => {
-    const user = userEvent.setup();
+  it('should show notification timestamps', async () => {
+    renderWithNotificationProvider(<RealTimePage />);
 
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-    });
-
-    renderWithProviders(<RealTimePage />);
-
-    const simulateButton = screen.getByTestId('simulate-notifications');
-    await user.click(simulateButton);
+    fireEvent.click(screen.getByTestId('test-info-notification'));
 
     await waitFor(() => {
-      // Should show error notification
-      expect(screen.getByText('Notifications received: 1')).toBeInTheDocument();
+      const notificationItem = screen.getByTestId('notification-item-0');
+      const timestamp = notificationItem.querySelector(
+        '.text-xs.text-gray-500'
+      );
+      expect(timestamp).toBeInTheDocument();
+      expect(timestamp?.textContent).toMatch(/\d{1,2}:\d{2}:\d{2}/);
     });
-  });
-
-  it('should clear search input correctly', async () => {
-    const user = userEvent.setup();
-
-    renderWithProviders(<RealTimePage />);
-
-    const searchInput = screen.getByTestId('product-search-input');
-
-    // Type and then clear
-    await user.type(searchInput, 'test');
-    expect(searchInput).toHaveValue('test');
-
-    await user.clear(searchInput);
-    expect(searchInput).toHaveValue('');
-  });
-
-  it('should maintain state between interactions', async () => {
-    const user = userEvent.setup();
-
-    renderWithProviders(<RealTimePage />);
-
-    // Set search query
-    const searchInput = screen.getByTestId('product-search-input');
-    await user.type(searchInput, 'laptop');
-
-    // Set category
-    const categorySelect = screen.getByTestId('category-select');
-    await user.selectOptions(categorySelect, 'Electronics');
-
-    // Add a notification
-    const infoButton = screen.getByTestId('test-info-notification');
-    await user.click(infoButton);
-
-    // Verify all states are maintained
-    expect(searchInput).toHaveValue('laptop');
-    expect(categorySelect).toHaveValue('Electronics');
-    expect(screen.getByText('Notifications received: 1')).toBeInTheDocument();
   });
 });

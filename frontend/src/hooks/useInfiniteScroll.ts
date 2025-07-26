@@ -1,16 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UseInfiniteScrollOptions<T> {
-  fetchData: (
-    page: number,
-    limit: number
-  ) => Promise<{
+  fetchMore: (page: number, pageSize: number) => Promise<{
     data: T[];
     hasMore: boolean;
-    total: number;
+    total?: number;
   }>;
-  limit?: number;
-  initialPage?: number;
+  pageSize?: number;
+  threshold?: number;
+  enabled?: boolean;
 }
 
 interface UseInfiniteScrollReturn<T> {
@@ -19,72 +17,107 @@ interface UseInfiniteScrollReturn<T> {
   error: string | null;
   hasMore: boolean;
   loadMore: () => void;
-  refresh: () => void;
+  reset: () => void;
   total: number;
   page: number;
 }
 
 export function useInfiniteScroll<T>({
-  fetchData,
-  limit = 20,
-  initialPage = 1,
+  fetchMore,
+  pageSize = 20,
+  threshold = 100,
+  enabled = true,
 }: UseInfiniteScrollOptions<T>): UseInfiniteScrollReturn<T> {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(initialPage);
+  const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  
   const loadingRef = useRef(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const loadData = useCallback(
-    async (pageNum: number, reset = false) => {
-      if (loadingRef.current) return;
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current || !hasMore || !enabled) return;
 
-      loadingRef.current = true;
-      setLoading(true);
-      setError(null);
+    loadingRef.current = true;
+    setLoading(true);
+    setError(null);
 
-      try {
-        const result = await fetchData(pageNum, limit);
-
-        setData((prevData) =>
-          reset ? result.data : [...prevData, ...result.data]
-        );
-        setHasMore(result.hasMore);
+    try {
+      const result = await fetchMore(page, pageSize);
+      
+      setData(prevData => [...prevData, ...result.data]);
+      setHasMore(result.hasMore);
+      setPage(prevPage => prevPage + 1);
+      
+      if (result.total !== undefined) {
         setTotal(result.total);
-
-        if (!reset) {
-          setPage(pageNum);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-        loadingRef.current = false;
       }
-    },
-    [fetchData, limit]
-  );
-
-  const loadMore = useCallback(() => {
-    if (!loading && hasMore) {
-      loadData(page + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load more data');
+    } finally {
+      setLoading(false);
+      loadingRef.current = false;
     }
-  }, [loading, hasMore, page, loadData]);
+  }, [fetchMore, page, pageSize, hasMore, enabled]);
 
-  const refresh = useCallback(() => {
+  const reset = useCallback(() => {
     setData([]);
-    setPage(initialPage);
+    setPage(1);
     setHasMore(true);
+    setError(null);
     setTotal(0);
-    loadData(initialPage, true);
-  }, [initialPage, loadData]);
+    loadingRef.current = false;
+  }, []);
 
-  // Initial load
+  // Set up intersection observer
   useEffect(() => {
-    loadData(initialPage, true);
-  }, [loadData, initialPage]);
+    if (!enabled) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMore && !loading) {
+          loadMore();
+        }
+      },
+      {
+        rootMargin: `${threshold}px`,
+      }
+    );
+
+    observerRef.current = observer;
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadMore, hasMore, loading, threshold, enabled]);
+
+  // Observe sentinel element
+  useEffect(() => {
+    const observer = observerRef.current;
+    const sentinel = sentinelRef.current;
+
+    if (observer && sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => {
+      if (observer && sentinel) {
+        observer.unobserve(sentinel);
+      }
+    };
+  }, []);
+
+  // Load initial data
+  useEffect(() => {
+    if (enabled && data.length === 0 && !loadingRef.current) {
+      loadMore();
+    }
+  }, [enabled, data.length, loadMore]);
 
   return {
     data,
@@ -92,42 +125,24 @@ export function useInfiniteScroll<T>({
     error,
     hasMore,
     loadMore,
-    refresh,
+    reset,
     total,
     page,
   };
 }
 
-// Hook for intersection observer to trigger infinite scroll
-export function useIntersectionObserver(
-  callback: () => void,
-  options: IntersectionObserverInit = {}
-) {
-  const targetRef = useRef<HTMLDivElement>(null);
+// Hook for creating a sentinel element ref
+export function useInfiniteScrollSentinel() {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  
+  const SentinelComponent = useCallback(() => (
+    <div
+      ref={sentinelRef}
+      className="h-4 w-full"
+      data-testid="infinite-scroll-sentinel"
+      aria-hidden="true"
+    />
+  ), []);
 
-  useEffect(() => {
-    const target = targetRef.current;
-    if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          callback();
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '100px',
-        ...options,
-      }
-    );
-
-    observer.observe(target);
-
-    return () => {
-      observer.unobserve(target);
-    };
-  }, [callback, options]);
-
-  return targetRef;
+  return { sentinelRef, SentinelComponent };
 }

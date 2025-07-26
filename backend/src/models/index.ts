@@ -4,18 +4,22 @@ export {
   type CreateUserInput,
   type UpdateUserInput,
   type UserProfile,
-} from './User';
+} from './User.js';
 export {
   Product,
   type ProductData,
   type CreateProductInput,
   type UpdateProductInput,
   type ProductSearchOptions,
-} from './Product';
-export { Session, type SessionData, type CreateSessionInput } from './Session';
+} from './Product.js';
+export {
+  Session,
+  type SessionData,
+  type CreateSessionInput,
+} from './Session.js';
 export {
   FileRecord,
   type FileRecordData,
   type CreateFileRecordInput,
   type FileSearchOptions,
-} from './FileRecord';
+} from './FileRecord.js';

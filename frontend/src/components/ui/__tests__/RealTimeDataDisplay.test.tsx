@@ -1,13 +1,17 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { RealTimeDataDisplay } from '../RealTimeDataDisplay';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
+import RealTimeDataDisplay from '../RealTimeDataDisplay';
 import { NotificationProvider } from '../../../contexts/NotificationContext';
 
 // Mock socket.io-client
 const mockSocket = {
   on: jest.fn(),
-  off: jest.fn(),
   emit: jest.fn(),
   close: jest.fn(),
 };
@@ -16,261 +20,359 @@ jest.mock('socket.io-client', () => ({
   io: jest.fn(() => mockSocket),
 }));
 
-// Mock timers for testing intervals
-jest.useFakeTimers();
-
-const renderWithProvider = (component: React.ReactElement) => {
+const renderWithNotificationProvider = (component: React.ReactElement) => {
   return render(<NotificationProvider>{component}</NotificationProvider>);
 };
 
 describe('RealTimeDataDisplay', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.clearAllTimers();
-  });
-
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
     jest.useFakeTimers();
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('should render with default props', () => {
-    renderWithProvider(<RealTimeDataDisplay />);
+    renderWithNotificationProvider(<RealTimeDataDisplay />);
 
-    expect(screen.getByText('Real-Time Data')).toBeInTheDocument();
     expect(screen.getByTestId('real-time-data-display')).toBeInTheDocument();
-    expect(screen.getByTestId('connection-status')).toBeInTheDocument();
-    expect(screen.getByTestId('toggle-updates-button')).toBeInTheDocument();
+    expect(screen.getByTestId('display-title')).toHaveTextContent(
+      'Real-Time Data'
+    );
+    expect(
+      screen.getByTestId('connection-status-disconnected')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('toggle-stream-button')).toHaveTextContent(
+      'Start'
+    );
+    expect(screen.getByTestId('no-data-message')).toBeInTheDocument();
   });
 
-  it('should render with custom title', () => {
-    const customTitle = 'Custom Metrics Dashboard';
+  it('should render with custom props', () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay
+        title="Custom Title"
+        maxItems={10}
+        updateInterval={1000}
+        className="custom-class"
+      />
+    );
 
-    renderWithProvider(<RealTimeDataDisplay title={customTitle} />);
-
-    expect(screen.getByText(customTitle)).toBeInTheDocument();
+    expect(screen.getByTestId('display-title')).toHaveTextContent(
+      'Custom Title'
+    );
+    expect(screen.getByTestId('real-time-data-display')).toHaveClass(
+      'custom-class'
+    );
+    expect(screen.getByTestId('max-items')).toHaveTextContent('Max: 10');
+    expect(screen.getByTestId('update-interval')).toHaveTextContent(
+      'Update: 1000ms'
+    );
   });
 
-  it('should display initial data points', () => {
-    renderWithProvider(<RealTimeDataDisplay />);
+  it('should start and stop data stream', () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay updateInterval={100} />
+    );
 
-    expect(screen.getByTestId('data-points-grid')).toBeInTheDocument();
+    const toggleButton = screen.getByTestId('toggle-stream-button');
 
-    // Check for default data points
-    expect(screen.getByText('Active Users')).toBeInTheDocument();
-    expect(screen.getByText('Page Views')).toBeInTheDocument();
-    expect(screen.getByText('API Requests')).toBeInTheDocument();
-    expect(screen.getByText('Database Queries')).toBeInTheDocument();
-    expect(screen.getByText('Memory Usage (MB)')).toBeInTheDocument();
-    expect(screen.getByText('CPU Usage (%)')).toBeInTheDocument();
+    // Start the stream
+    fireEvent.click(toggleButton);
+    expect(toggleButton).toHaveTextContent('Stop');
+    expect(
+      screen.getByTestId('connection-status-connecting')
+    ).toBeInTheDocument();
+
+    // Stop the stream
+    fireEvent.click(toggleButton);
+    expect(toggleButton).toHaveTextContent('Start');
   });
 
-  it('should toggle updates when button is clicked', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  it('should generate data when stream is active and connected', async () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay updateInterval={100} />
+    );
 
-    renderWithProvider(<RealTimeDataDisplay />);
+    // Simulate socket connection
+    act(() => {
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'connect'
+      )?.[1];
+      if (connectHandler) connectHandler();
+    });
 
-    const toggleButton = screen.getByTestId('toggle-updates-button');
+    // Start the stream
+    fireEvent.click(screen.getByTestId('toggle-stream-button'));
 
-    // Initially should show "Start Updates"
-    expect(toggleButton).toHaveTextContent('Start Updates');
-    expect(screen.getByText('Auto-update: OFF')).toBeInTheDocument();
-
-    // Click to start updates
-    await user.click(toggleButton);
-
-    expect(toggleButton).toHaveTextContent('Stop Updates');
-    expect(screen.getByText('Auto-update: ON')).toBeInTheDocument();
-
-    // Click to stop updates
-    await user.click(toggleButton);
-
-    expect(toggleButton).toHaveTextContent('Start Updates');
-    expect(screen.getByText('Auto-update: OFF')).toBeInTheDocument();
-  });
-
-  it('should update data when auto-update is enabled', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-
-    renderWithProvider(<RealTimeDataDisplay updateInterval={1000} />);
-
-    const toggleButton = screen.getByTestId('toggle-updates-button');
-
-    // Start updates
-    await user.click(toggleButton);
-
-    // Get initial values
-    const dataValues = screen.getAllByTestId('data-value');
-    const initialValues = dataValues.map((el) => el.textContent);
-
-    // Advance time to trigger update
-    jest.advanceTimersByTime(1000);
+    // Fast-forward time to generate data
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
 
     await waitFor(() => {
-      const updatedValues = screen.getAllByTestId('data-value');
-      const newValues = updatedValues.map((el) => el.textContent);
-
-      // Values should have changed (at least some of them)
-      expect(newValues).not.toEqual(initialValues);
+      expect(
+        screen.getByTestId('connection-status-connected')
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('data-count')).not.toHaveTextContent(
+        'Items: 0'
+      );
     });
   });
 
-  it('should display trend indicators correctly', () => {
-    renderWithProvider(<RealTimeDataDisplay />);
+  it('should clear data when clear button is clicked', async () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay updateInterval={100} />
+    );
 
-    const trendIcons = screen.getAllByTestId('trend-icon');
+    // Simulate connection and start stream
+    act(() => {
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'connect'
+      )?.[1];
+      if (connectHandler) connectHandler();
+    });
 
-    // Should have trend icons for each data point
-    expect(trendIcons).toHaveLength(6);
+    fireEvent.click(screen.getByTestId('toggle-stream-button'));
 
-    // Icons should be one of the trend indicators
-    trendIcons.forEach((icon) => {
-      expect(['↗️', '↘️', '➡️']).toContain(icon.textContent);
+    // Generate some data
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('data-count')).not.toHaveTextContent(
+        'Items: 0'
+      );
+    });
+
+    // Clear data
+    fireEvent.click(screen.getByTestId('clear-data-button'));
+
+    expect(screen.getByTestId('data-count')).toHaveTextContent('Items: 0');
+    expect(screen.getByTestId('no-data-message')).toBeInTheDocument();
+  });
+
+  it('should limit data items to maxItems', async () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay updateInterval={50} maxItems={3} />
+    );
+
+    // Simulate connection and start stream
+    act(() => {
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'connect'
+      )?.[1];
+      if (connectHandler) connectHandler();
+    });
+
+    fireEvent.click(screen.getByTestId('toggle-stream-button'));
+
+    // Generate more data than maxItems
+    act(() => {
+      jest.advanceTimersByTime(300); // Should generate 6 items
+    });
+
+    await waitFor(() => {
+      const dataCount = screen.getByTestId('data-count').textContent;
+      expect(dataCount).toBe('Items: 3');
     });
   });
 
-  it('should display data changes when available', () => {
-    renderWithProvider(<RealTimeDataDisplay />);
+  it('should show different data types and statuses', async () => {
+    renderWithNotificationProvider(<RealTimeDataDisplay updateInterval={50} />);
 
-    const dataChanges = screen.getAllByTestId('data-change');
+    // Simulate connection and start stream
+    act(() => {
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'connect'
+      )?.[1];
+      if (connectHandler) connectHandler();
+    });
 
-    // Should have change indicators
-    expect(dataChanges.length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByTestId('toggle-stream-button'));
 
-    // Changes should be formatted with + or - prefix
-    dataChanges.forEach((change) => {
-      const text = change.textContent || '';
-      expect(text).toMatch(/^[+-]?\d+\.\d{2}$/);
+    // Generate multiple data points
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
+
+    await waitFor(() => {
+      // Should have at least one data item
+      expect(screen.getByTestId('data-item-0')).toBeInTheDocument();
+    });
+
+    // Check that data items have required elements
+    const firstItem = screen.getByTestId('data-item-0');
+    expect(
+      firstItem.querySelector('[data-testid="item-label"]')
+    ).toBeInTheDocument();
+    expect(
+      firstItem.querySelector('[data-testid="item-value"]')
+    ).toBeInTheDocument();
+    expect(
+      firstItem.querySelector('[data-testid="item-type"]')
+    ).toBeInTheDocument();
+    expect(
+      firstItem.querySelector('[data-testid="item-timestamp"]')
+    ).toBeInTheDocument();
+  });
+
+  it('should highlight newest item', async () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay updateInterval={100} />
+    );
+
+    // Simulate connection and start stream
+    act(() => {
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'connect'
+      )?.[1];
+      if (connectHandler) connectHandler();
+    });
+
+    fireEvent.click(screen.getByTestId('toggle-stream-button'));
+
+    // Generate first item
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
+    await waitFor(() => {
+      const firstItem = screen.getByTestId('data-item-0');
+      expect(firstItem).toHaveClass('bg-blue-50');
+    });
+
+    // Generate second item
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
+    await waitFor(() => {
+      // New item should be highlighted
+      const newFirstItem = screen.getByTestId('data-item-0');
+      expect(newFirstItem).toHaveClass('bg-blue-50');
+
+      // Previous item should not be highlighted
+      const secondItem = screen.getByTestId('data-item-1');
+      expect(secondItem).not.toHaveClass('bg-blue-50');
     });
   });
 
-  it('should show connection status', () => {
-    renderWithProvider(<RealTimeDataDisplay />);
+  it('should show disconnected status when socket is not connected', () => {
+    renderWithNotificationProvider(<RealTimeDataDisplay />);
 
-    const connectionStatus = screen.getByTestId('connection-status');
-    expect(connectionStatus).toBeInTheDocument();
-
-    // Should show disconnected initially (mocked)
+    expect(
+      screen.getByTestId('connection-status-disconnected')
+    ).toBeInTheDocument();
     expect(screen.getByText('Disconnected')).toBeInTheDocument();
   });
 
-  it('should display update interval information', () => {
-    const customInterval = 5000;
+  it('should show connecting status when stream starts but socket not connected', () => {
+    renderWithNotificationProvider(<RealTimeDataDisplay />);
 
-    renderWithProvider(<RealTimeDataDisplay updateInterval={customInterval} />);
+    fireEvent.click(screen.getByTestId('toggle-stream-button'));
 
-    expect(screen.getByText('Interval: 5s')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('connection-status-connecting')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Connecting...')).toBeInTheDocument();
   });
 
-  it('should handle WebSocket data updates', async () => {
-    renderWithProvider(<RealTimeDataDisplay />);
+  it('should show connected status when socket is connected', async () => {
+    renderWithNotificationProvider(<RealTimeDataDisplay />);
 
-    // Simulate WebSocket data update
-    const mockDataUpdate = {
-      type: 'metrics_update',
-      metrics: {
-        'Active Users': 150,
-        'Page Views': 2500,
-      },
-    };
+    // Simulate socket connection
+    act(() => {
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'connect'
+      )?.[1];
+      if (connectHandler) connectHandler();
+    });
 
-    // Find and call the WebSocket event handler
-    const dataUpdateHandler = mockSocket.on.mock.calls.find(
-      (call) => call[0] === 'data-update'
-    )?.[1];
-
-    if (dataUpdateHandler) {
-      dataUpdateHandler(mockDataUpdate);
-    }
+    fireEvent.click(screen.getByTestId('toggle-stream-button'));
 
     await waitFor(() => {
-      expect(screen.getByText('150')).toBeInTheDocument();
-      expect(screen.getByText('2,500')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('connection-status-connected')
+      ).toBeInTheDocument();
+      expect(screen.getByText('Connected')).toBeInTheDocument();
     });
   });
 
-  it('should format numbers with locale string', () => {
-    renderWithProvider(<RealTimeDataDisplay />);
+  it('should display stats correctly', () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay updateInterval={2000} maxItems={50} />
+    );
 
-    const dataValues = screen.getAllByTestId('data-value');
+    expect(screen.getByTestId('data-count')).toHaveTextContent('Items: 0');
+    expect(screen.getByTestId('update-interval')).toHaveTextContent(
+      'Update: 2000ms'
+    );
+    expect(screen.getByTestId('max-items')).toHaveTextContent('Max: 50');
+  });
 
-    // Check that numbers are formatted (should contain commas for large numbers)
-    dataValues.forEach((value) => {
-      const text = value.textContent || '';
-      // Should be a valid number format
-      expect(text).toMatch(/^[\d,]+(\.\d+)?$/);
+  it('should clear data when stream is stopped and restarted', async () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay updateInterval={100} />
+    );
+
+    // Simulate connection
+    act(() => {
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'connect'
+      )?.[1];
+      if (connectHandler) connectHandler();
     });
-  });
 
-  it('should display timestamps for data points', () => {
-    renderWithProvider(<RealTimeDataDisplay />);
+    const toggleButton = screen.getByTestId('toggle-stream-button');
 
-    const dataPoints = screen.getAllByTestId('data-point');
-
-    dataPoints.forEach((point) => {
-      // Each data point should have a timestamp
-      const timeElement = point.querySelector('.text-xs.text-gray-500');
-      expect(timeElement).toBeInTheDocument();
-
-      // Should be a valid time format
-      const timeText = timeElement?.textContent || '';
-      expect(timeText).toMatch(/^\d{1,2}:\d{2}:\d{2}/);
+    // Start stream and generate data
+    fireEvent.click(toggleButton);
+    act(() => {
+      jest.advanceTimersByTime(200);
     });
-  });
 
-  it('should have proper data attributes for automation', () => {
-    renderWithProvider(<RealTimeDataDisplay />);
-
-    const dataPoints = screen.getAllByTestId('data-point');
-
-    dataPoints.forEach((point) => {
-      expect(point).toHaveAttribute('data-label');
+    await waitFor(() => {
+      expect(screen.getByTestId('data-count')).not.toHaveTextContent(
+        'Items: 0'
+      );
     });
+
+    // Stop stream
+    fireEvent.click(toggleButton);
+
+    // Start stream again - data should be cleared
+    fireEvent.click(toggleButton);
+
+    expect(screen.getByTestId('data-count')).toHaveTextContent('Items: 0');
   });
 
-  it('should apply custom className', () => {
-    const customClass = 'custom-data-display';
+  it('should format timestamps correctly', async () => {
+    renderWithNotificationProvider(
+      <RealTimeDataDisplay updateInterval={100} />
+    );
 
-    renderWithProvider(<RealTimeDataDisplay className={customClass} />);
+    // Simulate connection and start stream
+    act(() => {
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'connect'
+      )?.[1];
+      if (connectHandler) connectHandler();
+    });
 
-    const displayElement = screen.getByTestId('real-time-data-display');
-    expect(displayElement).toHaveClass(customClass);
-  });
+    fireEvent.click(screen.getByTestId('toggle-stream-button'));
 
-  it('should clean up intervals on unmount', () => {
-    const { unmount } = renderWithProvider(<RealTimeDataDisplay />);
+    // Generate data
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
 
-    // Start updates to create an interval
-    const toggleButton = screen.getByTestId('toggle-updates-button');
-    toggleButton.click();
-
-    // Unmount component
-    unmount();
-
-    // Advance time - no updates should occur after unmount
-    jest.advanceTimersByTime(5000);
-
-    // If properly cleaned up, no errors should occur
-    expect(true).toBe(true);
-  });
-
-  it('should not update when component is inactive', async () => {
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-
-    renderWithProvider(<RealTimeDataDisplay updateInterval={1000} />);
-
-    // Don't start updates - should remain inactive
-    const dataValues = screen.getAllByTestId('data-value');
-    const initialValues = dataValues.map((el) => el.textContent);
-
-    // Advance time
-    jest.advanceTimersByTime(2000);
-
-    // Values should not have changed
-    const unchangedValues = screen.getAllByTestId('data-value');
-    const finalValues = unchangedValues.map((el) => el.textContent);
-
-    expect(finalValues).toEqual(initialValues);
+    await waitFor(() => {
+      const timestamp = screen.getByTestId('item-timestamp');
+      expect(timestamp.textContent).toMatch(/\d{1,2}:\d{2}:\d{2}/);
+    });
   });
 });

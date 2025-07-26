@@ -98,6 +98,13 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
             >
               API Testing
             </Link>
+            <Link
+              to="/performance"
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              data-testid="nav-performance"
+            >
+              Performance
+            </Link>
 
             {/* Authentication Navigation */}
             {state.isAuthenticated ? (
@@ -307,6 +314,14 @@ const Header = ({ isDarkMode, toggleDarkMode }: HeaderProps) => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 API Testing
+              </Link>
+              <Link
+                to="/performance"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                data-testid="mobile-nav-performance"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Performance
               </Link>
 
               {/* Mobile Authentication Navigation */}

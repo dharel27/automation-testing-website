@@ -1,6 +1,6 @@
-import { getDatabase, Database } from './connection';
-import { MigrationRunner } from './migrations';
-import { User, Product, Session, FileRecord } from '../models/index';
+import { getDatabase, Database } from './connection.js';
+import { MigrationRunner } from './migrations.js';
+import { User, Product, Session, FileRecord } from '../models/index.js';
 
 export interface DatabaseModels {
   user: User;
