@@ -19,7 +19,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 import { Router } from 'express';
-import { getDatabase } from '../database/connection';
+import { getDatabase } from '../database/connection.js';
 import { User } from '../models/User';
 import { Session } from '../models/Session';
 import { authenticateToken, } from '../middleware/auth';

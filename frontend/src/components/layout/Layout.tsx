@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Header from './Header';
 import Footer from './Footer';
-import { ToastContainer } from '../ui/Toast';
+import ToastContainer from '../ui/ToastContainer';
 import { useNotifications } from '../../contexts/NotificationContext';
 
 interface LayoutProps {
@@ -83,7 +83,7 @@ const Layout = ({ children }: LayoutProps) => {
       <Footer />
 
       {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} onClose={removeToast} />
+      <ToastContainer />
     </div>
   );
 };

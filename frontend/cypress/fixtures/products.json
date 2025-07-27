@@ -1,0 +1,43 @@
+{
+  "success": true,
+  "data": {
+    "products": [
+      {
+        "id": "1",
+        "name": "Test Product 1",
+        "description": "This is a test product for automation testing",
+        "price": 29.99,
+        "category": "Electronics",
+        "inStock": true,
+        "tags": ["test", "automation", "electronics"],
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "2",
+        "name": "Test Product 2",
+        "description": "Another test product for comprehensive testing",
+        "price": 49.99,
+        "category": "Books",
+        "inStock": false,
+        "tags": ["test", "books", "education"],
+        "createdAt": "2024-01-02T00:00:00.000Z"
+      },
+      {
+        "id": "3",
+        "name": "Test Product 3",
+        "description": "Third test product with different attributes",
+        "price": 19.99,
+        "category": "Clothing",
+        "inStock": true,
+        "tags": ["test", "clothing", "fashion"],
+        "createdAt": "2024-01-03T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 3,
+      "totalPages": 1
+    }
+  }
+}

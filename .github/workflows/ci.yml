@@ -1,0 +1,405 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: "18"
+
+jobs:
+  # Backend Tests
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run backend linting
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Run backend unit tests
+        working-directory: ./backend
+        run: npm run test:coverage
+
+      - name: Upload backend coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+
+  # Frontend Tests
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run frontend linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Run frontend unit tests
+        working-directory: ./frontend
+        run: npm run test:run -- --coverage
+
+      - name: Upload frontend coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  # Accessibility Tests
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run accessibility tests
+        working-directory: ./frontend
+        run: npm run test:run -- --testPathPattern=accessibility
+
+      - name: Generate accessibility report
+        working-directory: ./frontend
+        run: |
+          npm run test:run -- --testPathPattern=accessibility --reporter=json --outputFile=accessibility-results.json
+
+      - name: Upload accessibility results
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-results
+          path: frontend/accessibility-results.json
+
+  # E2E Tests
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    services:
+      backend:
+        image: node:18
+        ports:
+          - 3001:3001
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Start backend server
+        working-directory: ./backend
+        run: |
+          npm start &
+          sleep 10
+        env:
+          NODE_ENV: test
+          PORT: 3001
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Start frontend server
+        working-directory: ./frontend
+        run: |
+          npm run preview -- --port 5173 &
+          sleep 10
+
+      - name: Wait for servers to be ready
+        run: |
+          npx wait-on http://localhost:3001/api/health
+          npx wait-on http://localhost:5173
+
+      - name: Run Cypress E2E tests
+        working-directory: ./frontend
+        run: npm run test:e2e:ci
+        env:
+          CYPRESS_baseUrl: http://localhost:5173
+          CYPRESS_apiUrl: http://localhost:3001
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-results
+          path: |
+            frontend/cypress/videos
+            frontend/cypress/screenshots
+
+  # Security Scan
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Run npm audit (Backend)
+        working-directory: ./backend
+        run: npm audit --audit-level=high
+
+      - name: Run npm audit (Frontend)
+        working-directory: ./frontend
+        run: npm audit --audit-level=high
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=high
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Build applications
+        run: |
+          cd backend && npm run build
+          cd ../frontend && npm run build
+
+      - name: Start servers
+        run: |
+          cd backend && npm start &
+          cd frontend && npm run preview &
+          sleep 15
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          configPath: "./lighthouse.config.js"
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  # Code Quality
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Run SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Run ESLint with annotations
+        uses: ataylorme/eslint-annotate-action@v2
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          report-json: "eslint-report.json"
+
+  # Build and Deploy
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    needs:
+      [
+        backend-tests,
+        frontend-tests,
+        accessibility-tests,
+        e2e-tests,
+        security-scan,
+      ]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Build applications
+        run: |
+          cd backend && npm run build
+          cd ../frontend && npm run build
+
+      - name: Run final tests
+        run: |
+          cd backend && npm run test
+          cd ../frontend && npm run test:run
+
+      - name: Deploy to staging
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          echo "Deploying to staging environment"
+          # Add staging deployment commands here
+
+      - name: Deploy to production
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "Deploying to production environment"
+          # Add production deployment commands here
+
+      - name: Notify deployment status
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: "#deployments"
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Test Results Summary
+  test-summary:
+    name: Test Results Summary
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, accessibility-tests, e2e-tests]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate test summary
+        run: |
+          echo "# Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Backend Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Frontend Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.frontend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Accessibility Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.accessibility-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## E2E Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.e2e-tests.result }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `
+            ## 🧪 Test Results Summary
+
+            | Test Suite | Status |
+            |------------|--------|
+            | Backend Tests | ${{ needs.backend-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Frontend Tests | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Accessibility Tests | ${{ needs.accessibility-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | E2E Tests | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+
+            View detailed results in the [Actions tab](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

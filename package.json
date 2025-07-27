@@ -20,7 +20,16 @@
     "format:frontend": "cd frontend && npm run format",
     "format:backend": "cd backend && npm run format",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test-all.js",
+    "test:unit": "npm run test:unit:frontend && npm run test:unit:backend",
+    "test:unit:frontend": "cd frontend && npm run test:run",
+    "test:unit:backend": "cd backend && npm test",
+    "test:integration": "cd frontend && npm run test:run -- --testPathPattern=integration",
+    "test:accessibility": "cd frontend && npm run test:run -- --testPathPattern=accessibility",
+    "test:e2e": "node test-all.js --e2e",
+    "test:performance": "node test-all.js --performance",
+    "test:all": "node test-all.js --e2e --performance",
+    "test:ci": "npm run test:unit && npm run test:integration && npm run test:accessibility"
   },
   "keywords": [
     "automation",

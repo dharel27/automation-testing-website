@@ -27,7 +27,7 @@ import productRoutes from './routes/products.js';
 import fileRoutes from './routes/files.js';
 import testRoutes from './routes/test.js';
 import notificationRoutes from './routes/notifications.js';
-import testDataRoutes from './routes/test-data.js';
+// import testDataRoutes from './routes/test-data.js';
 import errorRoutes from './routes/errors.js';
 const app = express();
 const server = createServer(app);
@@ -80,7 +80,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/test-data', testDataRoutes);
+// app.use('/api/test-data', testDataRoutes);
 app.use('/api/errors', errorRoutes);
 // CSRF token endpoint
 app.get('/api/csrf-token', getCsrfToken);

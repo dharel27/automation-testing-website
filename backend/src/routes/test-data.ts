@@ -405,6 +405,272 @@ router.post('/seed/large-dataset', async (req, res) => {
 });
 
 /**
+ * Create demo scenarios for comprehensive testing
+ */
+router.post('/seed/demo-scenarios', async (req, res) => {
+  try {
+    // Reset existing data first
+    await db.run('DELETE FROM sessions');
+    await db.run('DELETE FROM file_records');
+    await db.run('DELETE FROM products');
+    await db.run('DELETE FROM users');
+    await db.run('DELETE FROM sqlite_sequence');
+
+    // Create comprehensive demo users with different roles and states
+    const demoUsers = [
+      {
+        username: 'demo-admin',
+        email: 'admin@demo.com',
+        password: 'Demo123!',
+        role: 'admin' as const,
+        profile: {
+          firstName: 'Demo',
+          lastName: 'Administrator',
+          avatar: null,
+        },
+      },
+      {
+        username: 'demo-user',
+        email: 'user@demo.com',
+        password: 'Demo123!',
+        role: 'user' as const,
+        profile: {
+          firstName: 'Demo',
+          lastName: 'User',
+          avatar: null,
+        },
+      },
+      {
+        username: 'demo-guest',
+        email: 'guest@demo.com',
+        password: 'Demo123!',
+        role: 'guest' as const,
+        profile: {
+          firstName: 'Demo',
+          lastName: 'Guest',
+          avatar: null,
+        },
+      },
+      {
+        username: 'test-automation',
+        email: 'automation@test.com',
+        password: 'Test123!',
+        role: 'user' as const,
+        profile: {
+          firstName: 'Test',
+          lastName: 'Automation',
+          avatar: null,
+        },
+      },
+      {
+        username: 'performance-test',
+        email: 'performance@test.com',
+        password: 'Perf123!',
+        role: 'user' as const,
+        profile: {
+          firstName: 'Performance',
+          lastName: 'Tester',
+          avatar: null,
+        },
+      },
+    ];
+
+    // Create demo products with various scenarios
+    const demoProducts = [
+      {
+        name: 'Premium Laptop',
+        description:
+          'High-performance laptop for professional use with advanced features and excellent build quality.',
+        price: 1299.99,
+        category: 'Electronics',
+        inStock: true,
+        imageUrl: null,
+        tags: ['laptop', 'premium', 'professional', 'electronics'],
+      },
+      {
+        name: 'Budget Smartphone',
+        description:
+          'Affordable smartphone with essential features for everyday use.',
+        price: 199.99,
+        category: 'Electronics',
+        inStock: true,
+        imageUrl: null,
+        tags: ['smartphone', 'budget', 'mobile', 'electronics'],
+      },
+      {
+        name: 'Out of Stock Item',
+        description:
+          'This product is currently out of stock for testing inventory scenarios.',
+        price: 49.99,
+        category: 'Electronics',
+        inStock: false,
+        imageUrl: null,
+        tags: ['out-of-stock', 'test', 'inventory'],
+      },
+      {
+        name: 'Programming Book',
+        description:
+          'Comprehensive guide to modern web development with practical examples.',
+        price: 39.99,
+        category: 'Books',
+        inStock: true,
+        imageUrl: null,
+        tags: ['programming', 'web-development', 'education', 'books'],
+      },
+      {
+        name: 'Expensive Watch',
+        description:
+          'Luxury timepiece with premium materials and craftsmanship.',
+        price: 2999.99,
+        category: 'Accessories',
+        inStock: true,
+        imageUrl: null,
+        tags: ['luxury', 'watch', 'expensive', 'accessories'],
+      },
+      {
+        name: 'Free Sample',
+        description: 'Free sample product for testing zero-price scenarios.',
+        price: 0.0,
+        category: 'Samples',
+        inStock: true,
+        imageUrl: null,
+        tags: ['free', 'sample', 'test'],
+      },
+      {
+        name: 'Special Characters Product ñáéíóú',
+        description:
+          'Product with special characters for internationalization testing: ñáéíóú çüß',
+        price: 25.5,
+        category: 'Test',
+        inStock: true,
+        imageUrl: null,
+        tags: ['special-chars', 'i18n', 'unicode', 'test'],
+      },
+      {
+        name: 'Long Product Name That Exceeds Normal Length Limits For UI Testing Purposes',
+        description:
+          'This product has an extremely long name to test how the UI handles overflow and text wrapping in various components and layouts.',
+        price: 15.99,
+        category: 'Test',
+        inStock: true,
+        imageUrl: null,
+        tags: ['long-name', 'ui-test', 'overflow', 'text-wrapping'],
+      },
+    ];
+
+    // Seed demo users
+    const users = [];
+    for (const userData of demoUsers) {
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const user = new User(
+        userData.username,
+        userData.email,
+        hashedPassword,
+        userData.role,
+        userData.profile
+      );
+
+      await user.save();
+      users.push({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        profile: user.profile,
+      });
+    }
+
+    // Seed demo products
+    const products = [];
+    for (const productData of demoProducts) {
+      const product = new Product(
+        productData.name,
+        productData.description,
+        productData.price,
+        productData.category,
+        productData.inStock,
+        productData.imageUrl,
+        productData.tags
+      );
+
+      await product.save();
+      products.push({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        category: product.category,
+        inStock: product.inStock,
+        tags: product.tags,
+      });
+    }
+
+    // Add additional products for pagination testing
+    const paginationProducts = [];
+    for (let i = 1; i <= 50; i++) {
+      const product = new Product(
+        `Pagination Test Product ${i}`,
+        `Product ${i} for testing pagination, sorting, and filtering functionality.`,
+        Math.round((Math.random() * 100 + 5) * 100) / 100,
+        i % 2 === 0 ? 'Electronics' : 'Books',
+        Math.random() > 0.3,
+        null,
+        ['pagination', 'test', `item-${i}`]
+      );
+
+      await product.save();
+      paginationProducts.push({
+        id: product.id,
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        inStock: product.inStock,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Demo scenarios created successfully',
+      data: {
+        users: users.length,
+        demoProducts: products.length,
+        paginationProducts: paginationProducts.length,
+        totalProducts: products.length + paginationProducts.length,
+      },
+      demoCredentials: {
+        admin: { username: 'demo-admin', password: 'Demo123!' },
+        user: { username: 'demo-user', password: 'Demo123!' },
+        guest: { username: 'demo-guest', password: 'Demo123!' },
+        automation: { username: 'test-automation', password: 'Test123!' },
+        performance: { username: 'performance-test', password: 'Perf123!' },
+      },
+      testScenarios: [
+        'Login with different user roles',
+        'Test out-of-stock product handling',
+        'Test special characters and long names',
+        'Test free products (price = 0)',
+        'Test expensive products (price > $1000)',
+        'Test pagination with 50+ products',
+        'Test search and filtering',
+        'Test inventory management',
+      ],
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error creating demo scenarios:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'DEMO_SCENARIOS_ERROR',
+        message: 'Failed to create demo scenarios',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
  * Get current test data status
  */
 router.get('/status', async (req, res) => {

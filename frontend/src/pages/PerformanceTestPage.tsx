@@ -4,6 +4,7 @@ import {
   useAsyncPerformanceMonitor,
 } from '../hooks/usePerformanceMonitor';
 import { usePerformance } from '../contexts/PerformanceContext';
+import PerformanceDashboard from '../components/performance/PerformanceDashboard';
 
 interface LargeDataItem {
   id: number;
@@ -222,9 +223,14 @@ export default function PerformanceTestPage() {
           <strong>{dataset.length.toLocaleString()}</strong> items
         </p>
 
+        {/* Performance Dashboard */}
+        <PerformanceDashboard className="mb-6" showDetails={true} />
+
         {/* Performance Metrics Display */}
         <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold mb-2">Performance Metrics</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            Component Performance Metrics
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-gray-600 dark:text-gray-400">

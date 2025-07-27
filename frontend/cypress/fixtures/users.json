@@ -1,0 +1,40 @@
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "1",
+        "username": "admin",
+        "email": "admin@example.com",
+        "firstName": "Admin",
+        "lastName": "User",
+        "role": "admin",
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "2",
+        "username": "testuser",
+        "email": "test@example.com",
+        "firstName": "Test",
+        "lastName": "User",
+        "role": "user",
+        "createdAt": "2024-01-02T00:00:00.000Z"
+      },
+      {
+        "id": "3",
+        "username": "guestuser",
+        "email": "guest@example.com",
+        "firstName": "Guest",
+        "lastName": "User",
+        "role": "guest",
+        "createdAt": "2024-01-03T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 3,
+      "totalPages": 1
+    }
+  }
+}
